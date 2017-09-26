@@ -26,12 +26,23 @@
 *.app
 *.i*86
 *.x86_64
-*.hex
+*.hexhttps://www.youtube.com/watch?v=i7yoXqlg48M
+
+# Folders
+CMakeFiles/
+
+# Files
+Makefile
+CMakeCache.txt
+DartConfiguration.tcl
 
 # Debug files
 *.dSYM/
 *.su
 
+# Additional suffixes
 *.pyc
 *.cmake
 *.make
+*.xml
+*.iml
