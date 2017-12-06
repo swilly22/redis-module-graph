@@ -11,7 +11,7 @@
 #include "value.h"
 #include "redismodule.h"
 #include "query_executor.h"
-#include "arithmetic_expression.h"
+#include "arithmetic/arithmetic_expression.h"
 
 #include "util/prng.h"
 #include "util/snowflake.h"
