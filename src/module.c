@@ -27,7 +27,7 @@
 #include "stores/store.h"
 
 #include "grouping/group_cache.h"
-#include "aggregate/agg_funcs.h"
+#include "arithmetic/agg_funcs.h"
 #include "hexastore/hexastore.h"
 #include "hexastore/triplet.h"
 
