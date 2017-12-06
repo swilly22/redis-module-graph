@@ -30,6 +30,9 @@ GRAPH.QUERY us_government "MATCH (p:president)-[:born]->(:state {name:Hawaii}) R
 The syntax is based on [openCypher](http://www.opencypher.org/) and currently only a subset of the language is
 supported.
 
+1. [Clauses](#query-structure)
+2. [Functions](#functions)
+
 A query is composed of five parts:
 
 ### Query structure
@@ -41,6 +44,7 @@ A query is composed of five parts:
 - LIMIT
 - CREATE
 - DELETE
+- SET
 
 #### MATCH
 
@@ -264,3 +268,69 @@ MATCH (p:person {name:'Jim'})-[r:friends]->()
 DELETE r
 ```
 This query will delete all `friend` outgoing relationships from the node with the name 'Jim'.
+
+#### SET
+
+The `SET` clause is used to update properties on nodes and relationships.
+
+
+To set a property on a node or relationship, use `SET`.
+
+Query.
+
+```sh
+MATCH (n { name: 'Jim' }) SET n.name = 'Bob'
+```
+
+Set multiple properties using one `SET` clause
+If you want to set multiple properties in one go, simply separate them with a comma.
+
+Query.
+
+```sh
+MATCH (n { name: 'Jim', age:32 })
+SET n.age = 33, n.name = 'Bob'
+```
+
+### Functions
+This section contains information on all supported functions from the OpenCypher query language.
+
+* [Aggregating functions](#aggregating-functions)
+* [Mathematical functions](#mathematical-functions)
+* [String functions](#string-functions)
+
+## Aggregating functions
+
+|Function | Description|
+| ------- |:-----------|
+|avg() | Returns the average of a set of numeric values.|
+|count() | Returns the number of values or rows.|
+|max() | Returns the maximum value in a set of values.|
+|min() | Returns the minimum value in a set of values.|
+|sum() | Returns the sum of a set of numeric values.|
+
+
+## Mathematical functions
+|Function | Description|
+| ------- |:-----------|
+|abs() | Returns the absolute value of a number.|
+|ceil() | Returns the smallest floating point number that is greater than or equal to a number and equal to |a mathematical integer.
+|floor() | Returns the largest floating point number that is less than or equal to a number and equal to a |mathematical integer.
+|rand() | Returns a random floating point number in the range from 0 to 1; i.e. [0,1].
+|round() | Returns the value of a number rounded to the nearest integer.|
+|sign() | Returns the signum of a number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.|
+
+## String functions
+
+|Function | Description|
+| ------- |:-----------|
+|left() | Returns a string containing the specified number of leftmost characters of the original string.|
+|lTrim() | Returns the original string with leading whitespace removed.|
+|reverse() | Returns a string in which the order of all |characters in the original string have been reversed.|
+|right() | Returns a string containing the specified number of rightmost characters of the original string.|
+|rTrim() | Returns the original string with trailing whitespace removed.|
+|substring() | Returns a substring of the original string, beginning with a 0-based index start and length.|
+|toLower() | Returns the original string in lowercase.|
+|toString() | Converts an integer, float or boolean value to a string.|
+|toUpper() | Returns the original string in uppercase.|
+|trim() | Returns the original string with leading and trailing whitespace removed.|

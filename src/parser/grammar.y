@@ -1,5 +1,7 @@
 %left OR.
 %left AND.
+%left ADD DASH.
+%left MUL DIV.
 %nonassoc EQ GT GE LT LE.
 
 %token_type {Token}
@@ -33,19 +35,27 @@
 query ::= expr(A). { ctx->root = A; }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D) returnClause(E) orderClause(F) limitClause(G). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, E, F, G);
+	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL);
+	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) deleteClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL);
+	A = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
+}
+
+expr(A) ::= matchClause(B) whereClause(C) setClause(D). {
+	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
+}
+
+expr(A) ::= matchClause(B) whereClause(C) setClause(D) returnClause(E) orderClause(F) limitClause(G). {
+	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
 }
 
 expr(A) ::= createClause(B). {
-	A = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL);
+	A = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
 }
 
 %type matchClause { AST_MatchNode* }
@@ -54,7 +64,7 @@ matchClause(A) ::= MATCH chains(B). {
 	A = New_AST_MatchNode(B);
 }
 
-%type createClause { AST_CreateNode *}
+%type createClause { AST_CreateNode* }
 
 // Empty create clause.
 createClause(A) ::= . {
@@ -63,6 +73,26 @@ createClause(A) ::= . {
 
 createClause(A) ::= CREATE chains(B). {
 	A = New_AST_CreateNode(B);
+}
+
+%type setClause { AST_SetNode* }
+setClause(A) ::= SET setList(B). {
+	A = New_AST_SetNode(B);
+}
+
+%type setList {Vector*}
+setList(A) ::= setElement(B). {
+	A = NewVector(AST_SetElement*, 1);
+	Vector_Push(A, B);
+}
+setList(A) ::= setList(B) COMMA setElement(C). {
+	Vector_Push(B, C);
+	A = B;
+}
+
+%type setElement {AST_SetElement*}
+setElement(A) ::= variable(B) EQ arithmetic_expression(C). {
+	A = New_AST_SetElement(B, C);
 }
 
 %type chain {Vector*}
@@ -102,12 +132,12 @@ deleteClause(A) ::= DELETE deleteExpression(B). {
 
 %type deleteExpression {Vector*}
 
-deleteExpression(A) ::= STRING(B). {
+deleteExpression(A) ::= UQSTRING(B). {
 	A = NewVector(char*, 1);
 	Vector_Push(A, B.strval);
 }
 
-deleteExpression(A) ::= deleteExpression(B) COMMA STRING(C). {
+deleteExpression(A) ::= deleteExpression(B) COMMA UQSTRING(C). {
 	Vector_Push(B, C.strval);
 	A = B;
 }
@@ -115,17 +145,17 @@ deleteExpression(A) ::= deleteExpression(B) COMMA STRING(C). {
 %type node {AST_NodeEntity*}
 
 // Node with alias and label
-node(A) ::= LEFT_PARENTHESIS STRING(B) COLON STRING(C) properties(D) RIGHT_PARENTHESIS. {
+node(A) ::= LEFT_PARENTHESIS UQSTRING(B) COLON UQSTRING(C) properties(D) RIGHT_PARENTHESIS. {
 	A = New_AST_NodeEntity(B.strval, C.strval, D);
 }
 
 // node with label
-node(A) ::= LEFT_PARENTHESIS COLON STRING(B) properties(D) RIGHT_PARENTHESIS. {
+node(A) ::= LEFT_PARENTHESIS COLON UQSTRING(B) properties(D) RIGHT_PARENTHESIS. {
 	A = New_AST_NodeEntity(NULL, B.strval, D);
 }
 
 // node with alias
-node(A) ::= LEFT_PARENTHESIS STRING(B) properties(D) RIGHT_PARENTHESIS. {
+node(A) ::= LEFT_PARENTHESIS UQSTRING(B) properties(D) RIGHT_PARENTHESIS. {
 	A = New_AST_NodeEntity(B.strval, NULL, D);
 }
 
@@ -154,18 +184,18 @@ edge(A) ::= LEFT_BRACKET properties(B) RIGHT_BRACKET . {
 	A = New_AST_LinkEntity(NULL, NULL, B, N_DIR_UNKNOWN);
 }
 
-// Edge with an alias [alias]
-edge(A) ::= LEFT_BRACKET STRING(B) properties(C) RIGHT_BRACKET . { 
+// Edge with alias [alias]
+edge(A) ::= LEFT_BRACKET UQSTRING(B) properties(C) RIGHT_BRACKET . { 
 	A = New_AST_LinkEntity(B.strval, NULL, C, N_DIR_UNKNOWN);
 }
 
-// Edge with an alias [:label]
-edge(A) ::= LEFT_BRACKET COLON STRING(B) properties(C) RIGHT_BRACKET . { 
+// Edge with label [:label]
+edge(A) ::= LEFT_BRACKET COLON UQSTRING(B) properties(C) RIGHT_BRACKET . { 
 	A = New_AST_LinkEntity(NULL, B.strval, C, N_DIR_UNKNOWN);
 }
 
-// Edge with an alias and label [alias:label]
-edge(A) ::= LEFT_BRACKET STRING(B) COLON STRING(C) properties(D) RIGHT_BRACKET . { 
+// Edge with alias and label [alias:label]
+edge(A) ::= LEFT_BRACKET UQSTRING(B) COLON UQSTRING(C) properties(D) RIGHT_BRACKET . { 
 	A = New_AST_LinkEntity(B.strval, C.strval, D, N_DIR_UNKNOWN);
 }
 
@@ -180,7 +210,8 @@ properties(A) ::= LEFT_CURLY_BRACKET mapLiteral(B) RIGHT_CURLY_BRACKET. {
 }
 
 %type mapLiteral {Vector*}
-mapLiteral(A) ::= STRING(B) COLON value(C). {
+// key:value
+mapLiteral(A) ::= UQSTRING(B) COLON value(C). {
 	A = NewVector(SIValue*, 2);
 
 	SIValue *key = malloc(sizeof(SIValue));
@@ -192,7 +223,7 @@ mapLiteral(A) ::= STRING(B) COLON value(C). {
 	Vector_Push(A, val);
 }
 
-mapLiteral(A) ::= STRING(B) COLON value(C) COMMA mapLiteral(D). {
+mapLiteral(A) ::= UQSTRING(B) COLON value(C) COMMA mapLiteral(D). {
 	SIValue *key = malloc(sizeof(SIValue));
 	*key = SI_StringValC(strdup(B.strval));
 	Vector_Push(D, key);
@@ -217,30 +248,15 @@ whereClause(A) ::= WHERE cond(B). {
 %type cond {AST_FilterNode*}
 %destructor cond { Free_AST_FilterNode($$); }
 
-cond(A) ::= STRING(B) DOT STRING(C) op(D) STRING(E) DOT STRING(F). { A = New_AST_VaryingPredicateNode(B.strval, C.strval, D, E.strval, F.strval); }
-cond(A) ::= STRING(B) DOT STRING(C) op(D) value(E). { A = New_AST_ConstantPredicateNode(B.strval, C.strval, D, E); }
+// me.age > friend.age
+cond(A) ::= UQSTRING(B) DOT UQSTRING(C) relation(D) UQSTRING(E) DOT UQSTRING(F). { A = New_AST_VaryingPredicateNode(B.strval, C.strval, D, E.strval, F.strval); }
+// me.age > 30
+// TODO: change value to arithmetic_expression.
+cond(A) ::= UQSTRING(B) DOT UQSTRING(C) relation(D) value(E). { A = New_AST_ConstantPredicateNode(B.strval, C.strval, D, E); }
 cond(A) ::= LEFT_PARENTHESIS cond(B) RIGHT_PARENTHESIS. { A = B; }
 cond(A) ::= cond(B) AND cond(C). { A = New_AST_ConditionNode(B, AND, C); }
 cond(A) ::= cond(B) OR cond(C). { A = New_AST_ConditionNode(B, OR, C); }
 
-
-%type op {int}
-op(A) ::= EQ. { A = EQ; }
-op(A) ::= GT. { A = GT; }
-op(A) ::= LT. { A = LT; }
-op(A) ::= LE. { A = LE; }
-op(A) ::= GE. { A = GE; }
-op(A) ::= NE. { A = NE; }
-
-
-%type value {SIValue}
-
-// raw value tokens - int / string / float
-value(A) ::= INTEGER(B). {  A = SI_DoubleVal(B.intval); }
-value(A) ::= STRING(B). {  A = SI_StringValC(strdup(B.strval)); }
-value(A) ::= FLOAT(B). {  A = SI_DoubleVal(B.dval); }
-value(A) ::= TRUE. { A = SI_BoolVal(1); }
-value(A) ::= FALSE. { A = SI_BoolVal(0); }
 
 %type returnClause {AST_ReturnNode*}
 
@@ -266,32 +282,92 @@ returnElements(A) ::= returnElement(B). {
 
 %type returnElement {AST_ReturnElementNode*}
 
-returnElement(A) ::= variable(B). {
-	A = New_AST_ReturnElementNode(N_PROP, B, NULL, NULL);
+returnElement(A) ::= arithmetic_expression(B). {
+	A = New_AST_ReturnElementNode(B, NULL);
 }
-returnElement(A) ::= variable(B) AS STRING(C). {
-	A = New_AST_ReturnElementNode(N_PROP, B, NULL, C.strval);
+
+// me.age AS my_age
+returnElement(A) ::= arithmetic_expression(B) AS UQSTRING(C). {
+	A = New_AST_ReturnElementNode(B, C.strval);
 }
-returnElement(A) ::= aggFunc(B). {
+
+%type arithmetic_expression {AST_ArithmeticExpressionNode*}
+
+// Highest precedence, (1+2)
+arithmetic_expression(A) ::= LEFT_PARENTHESIS arithmetic_expression(B) RIGHT_PARENTHESIS. {
 	A = B;
 }
-returnElement(A) ::= STRING(B). {
-	A = New_AST_ReturnElementNode(N_NODE, New_AST_Variable(B.strval, NULL), NULL, NULL);
+
+// Binary op (+,-,/,*)
+//arithmetic_expression(A) ::= arithmetic_expression(B) arithmetic_operator(C) arithmetic_expression(D). {
+//	Vector *args = NewVector(AST_ArithmeticExpressionNode*, 2);
+//	Vector_Push(args, B);
+//	Vector_Push(args, D);
+//	A = New_AST_AR_EXP_OpNode("ADD", args);
+//}
+
+arithmetic_expression(A) ::= arithmetic_expression(B) ADD arithmetic_expression(D). {
+	Vector *args = NewVector(AST_ArithmeticExpressionNode*, 2);
+	Vector_Push(args, B);
+	Vector_Push(args, D);
+	A = New_AST_AR_EXP_OpNode("ADD", args);
+}
+
+arithmetic_expression(A) ::= arithmetic_expression(B) DASH arithmetic_expression(D). {
+	Vector *args = NewVector(AST_ArithmeticExpressionNode*, 2);
+	Vector_Push(args, B);
+	Vector_Push(args, D);
+	A = New_AST_AR_EXP_OpNode("SUB", args);
+}
+
+arithmetic_expression(A) ::= arithmetic_expression(B) MUL arithmetic_expression(D). {
+	Vector *args = NewVector(AST_ArithmeticExpressionNode*, 2);
+	Vector_Push(args, B);
+	Vector_Push(args, D);
+	A = New_AST_AR_EXP_OpNode("MUL", args);
+}
+
+arithmetic_expression(A) ::= arithmetic_expression(B) DIV arithmetic_expression(D). {
+	Vector *args = NewVector(AST_ArithmeticExpressionNode*, 2);
+	Vector_Push(args, B);
+	Vector_Push(args, D);
+	A = New_AST_AR_EXP_OpNode("DIV", args);
+}
+
+// concat(replace(a.first_name), ':', tostring(1 + 2))
+arithmetic_expression(A) ::= UQSTRING(B) LEFT_PARENTHESIS arithmetic_expression_list(C) RIGHT_PARENTHESIS. {
+	A = New_AST_AR_EXP_OpNode(B.strval, C);
+}
+
+// 4, "hello"
+arithmetic_expression(A) ::= value(B). {
+	A = New_AST_AR_EXP_ConstOperandNode(B);
+}
+
+// a.name
+arithmetic_expression(A) ::= variable(B). {
+	A = New_AST_AR_EXP_VariableOperandNode(B->alias, B->property);
+}
+
+// Vector of AST_ArithmeticExpressionNode pointers.
+%type arithmetic_expression_list {Vector*}
+arithmetic_expression_list(A) ::= arithmetic_expression(B). {
+	A = NewVector(AST_ArithmeticExpressionNode*, 1);
+	Vector_Push(A, B);
+}
+arithmetic_expression_list(A) ::= arithmetic_expression(B) COMMA arithmetic_expression_list(C). {
+	Vector_Push(C, B);
+	A = C;
 }
 
 %type variable {AST_Variable*}
-
-variable(A) ::= STRING(B) DOT STRING(C). {
+// me (collapsed node).
+variable(A) ::= UQSTRING(B). {
+	A = New_AST_Variable(B.strval, NULL);
+}
+// me.age
+variable(A) ::= UQSTRING(B) DOT UQSTRING(C). {
 	A = New_AST_Variable(B.strval, C.strval);
-}
-
-%type aggFunc {AST_ReturnElementNode*}
-
-aggFunc(A) ::= STRING(B) LEFT_PARENTHESIS variable(C) RIGHT_PARENTHESIS. {
-	A = New_AST_ReturnElementNode(N_AGG_FUNC, C, B.strval, NULL);
-}
-aggFunc(A) ::= STRING(B) LEFT_PARENTHESIS variable(C) RIGHT_PARENTHESIS AS STRING(D). {
-	A = New_AST_ReturnElementNode(N_AGG_FUNC, C, B.strval, D.strval);
 }
 
 %type orderClause {AST_OrderNode*}
@@ -321,11 +397,13 @@ columnNameList(A) ::= columnName(B). {
 
 %type columnName {AST_ColumnNode*}
 columnName(A) ::= variable(B). {
-	A = AST_ColumnNodeFromVariable(B);
+	if(B->property != NULL) {
+		A = AST_ColumnNodeFromVariable(B);
+	} else {
+		A = AST_ColumnNodeFromAlias(B->alias);
+	}
+
 	Free_AST_Variable(B);
-}
-columnName(A) ::= STRING(B). {
-	A = AST_ColumnNodeFromAlias(B.strval);
 }
 
 %type limitClause {AST_LimitNode*}
@@ -336,6 +414,32 @@ limitClause(A) ::= . {
 limitClause(A) ::= LIMIT INTEGER(B). {
 	A = New_AST_LimitNode(B.intval);
 }
+
+
+%type relation {int}
+relation(A) ::= EQ. { A = EQ; }
+relation(A) ::= GT. { A = GT; }
+relation(A) ::= LT. { A = LT; }
+relation(A) ::= LE. { A = LE; }
+relation(A) ::= GE. { A = GE; }
+relation(A) ::= NE. { A = NE; }
+
+//%type arithmetic_operator {int}
+//arithmetic_operator(A) ::= MUL. { A = MUL; }
+//arithmetic_operator(A) ::= DIV. { A = DIV; }
+//arithmetic_operator(A) ::= ADD. { A = ADD; }
+//arithmetic_operator(A) ::= DASH. { A = DASH; }
+
+%type value {SIValue}
+
+// raw value tokens - int / string / float
+value(A) ::= INTEGER(B). {  A = SI_DoubleVal(B.intval); }
+value(A) ::= DASH INTEGER(B). {  A = SI_DoubleVal(-B.intval); }
+value(A) ::= STRING(B). {  A = SI_StringValC(strdup(B.strval)); }
+value(A) ::= FLOAT(B). {  A = SI_DoubleVal(B.dval); }
+value(A) ::= DASH FLOAT(B). {  A = SI_DoubleVal(-B.dval); }
+value(A) ::= TRUE. { A = SI_BoolVal(1); }
+value(A) ::= FALSE. { A = SI_BoolVal(0); }
 
 %code {
 

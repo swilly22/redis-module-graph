@@ -11,9 +11,11 @@
 #include "value.h"
 #include "redismodule.h"
 #include "query_executor.h"
+#include "arithmetic_expression.h"
 
 #include "util/prng.h"
 #include "util/snowflake.h"
+#include "util/triemap/triemap_type.h"
 
 #include "rmutil/util.h"
 #include "rmutil/vector.h"
@@ -48,23 +50,23 @@ int MGraph_DeleteGraph(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     char *storeId;
     RMUtil_ParseArgs(argv, argc, 1, "c", &graph);
     
-    Store *store = GetStore(ctx, STORE_NODE, graph, NULL);
-    StoreIterator *it = Store_Search(store, "");
+    LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graph, NULL);
+    LabelStoreIterator *it = LabelStore_Search(store, "");
     
     char *nodeId;
     tm_len_t nodeIdLen;
     Node *node;
 
-    while(StoreIterator_Next(it, &nodeId, &nodeIdLen, (void**)&node)) {
+    while(LabelStoreIterator_Next(it, &nodeId, &nodeIdLen, (void**)&node)) {
         RedisModuleString* strKey = RedisModule_CreateString(ctx, nodeId, nodeIdLen);
         key = RedisModule_OpenKey(ctx, strKey, REDISMODULE_WRITE);
         RedisModule_FreeString(ctx, strKey);
         RedisModule_DeleteKey(key);
         RedisModule_CloseKey(key);
     }
-    StoreIterator_Free(it);
+    LabelStoreIterator_Free(it);
     
-    int storeIdLen = Store_ID(&storeId, STORE_NODE, graph, NULL);
+    int storeIdLen = LabelStore_Id(&storeId, STORE_NODE, graph, NULL);
     RedisModuleString *rmStoreId = RedisModule_CreateString(ctx, storeId, storeIdLen);
     free(storeId);
     key = RedisModule_OpenKey(ctx, rmStoreId, REDISMODULE_WRITE);
@@ -75,22 +77,22 @@ int MGraph_DeleteGraph(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_CloseKey(key);
 
     /* TODO: delete store key. */
-    store = GetStore(ctx, STORE_EDGE, graph, NULL);
-    it = Store_Search(store, "");
+    store = LabelStore_Get(ctx, STORE_EDGE, graph, NULL);
+    it = LabelStore_Search(store, "");
     char *edgeId;
     tm_len_t edgeIdLen;
     Edge *edge;
 
-    while(StoreIterator_Next(it, &edgeId, &edgeIdLen, (void**)&edge)) {
+    while(LabelStoreIterator_Next(it, &edgeId, &edgeIdLen, (void**)&edge)) {
         RedisModuleString* strKey = RedisModule_CreateString(ctx, edgeId, edgeIdLen);
         key = RedisModule_OpenKey(ctx, strKey, REDISMODULE_WRITE);
         RedisModule_FreeString(ctx, strKey);
         RedisModule_DeleteKey(key);
         RedisModule_CloseKey(key);
     }
-    StoreIterator_Free(it);
+    LabelStoreIterator_Free(it);
 
-    storeIdLen = Store_ID(&storeId, STORE_EDGE, graph, NULL);
+    storeIdLen = LabelStore_Id(&storeId, STORE_EDGE, graph, NULL);
     rmStoreId = RedisModule_CreateString(ctx, storeId, storeIdLen);
     free(storeId);
     key = RedisModule_OpenKey(ctx, rmStoreId, REDISMODULE_WRITE);
@@ -132,6 +134,12 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
     
+    char *reason;
+    if (Validate_AST(ast, &reason) != AST_VALID) {
+        RedisModule_ReplyWithError(ctx, reason);
+        return REDISMODULE_OK;
+    }
+    
     /* Modify AST */
     if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
         /* Expend collapsed nodes. */
@@ -140,10 +148,22 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
     ResultSet* resultSet = ExecutionPlan_Execute(plan);
-    
+
     /* Send result-set back to client. */
     ExecutionPlanFree(plan);
     ResultSet_Replay(ctx, resultSet);
+
+    /* Replicate query only if it modified the keyspace. */
+    if(Query_Modifies_KeySpace(ast) &&
+       (resultSet->labels_added > 0 ||
+       resultSet->nodes_created > 0 ||
+       resultSet->properties_set > 0 ||
+       resultSet->relationships_created > 0 ||
+       resultSet->nodes_deleted > 0 ||
+       resultSet->relationships_deleted > 0)) {
+        RedisModule_ReplicateVerbatim(ctx);
+    }
+
     ResultSet_Free(ctx, resultSet);
 
     /* Report execution timing. */
@@ -183,6 +203,12 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
     
+    /* Modify AST */
+    if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
+        /* Expend collapsed nodes. */
+        ReturnClause_ExpandCollapsedNodes(ctx, ast, graphName);
+    }
+
     ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
     char* strPlan = ExecutionPlanPrint(plan);
     /* TODO: free execution plan.
@@ -199,6 +225,7 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     InitGroupCache();
     Agg_RegisterFuncs();
+    AR_RegisterFuncs(); /* Register arithmetic expression functions. */
 
     if (snowflake_init(1, 1) != 1) {
         RedisModule_Log(ctx, "error", "Failed to initialize snowflake");

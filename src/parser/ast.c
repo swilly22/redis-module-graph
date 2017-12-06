@@ -38,7 +38,6 @@ AST_FilterNode* New_AST_ConstantPredicateNode(const char* alias, const char* pro
 	return n;
 }
 
-
 AST_FilterNode *New_AST_ConditionNode(AST_FilterNode *left, int op, AST_FilterNode *right) {
   AST_FilterNode *n = malloc(sizeof(AST_FilterNode));
   n->t = N_COND;
@@ -48,7 +47,6 @@ AST_FilterNode *New_AST_ConditionNode(AST_FilterNode *left, int op, AST_FilterNo
 
   return n;
 }
-
 
 void FreePredicateNode(AST_PredicateNode* predicateNode) {
 
@@ -72,7 +70,6 @@ void FreePredicateNode(AST_PredicateNode* predicateNode) {
 
 	// TODO: Should I free constVal?
 }
-
 
 void Free_AST_FilterNode(AST_FilterNode* filterNode) {
 	if(!filterNode)
@@ -139,6 +136,13 @@ void Free_AST_GraphEntity(AST_GraphEntity *graphEntity) {
 	free(graphEntity);
 }
 
+AST_SetElement* New_AST_SetElement(AST_Variable *updated_entity, AST_ArithmeticExpressionNode *exp) {
+	AST_SetElement *set_element = malloc(sizeof(AST_SetElement));
+	set_element->entity = updated_entity;
+	set_element->exp = exp;
+	return set_element;
+}
+
 AST_MatchNode* New_AST_MatchNode(Vector *elements) {
 	AST_MatchNode *matchNode = (AST_MatchNode*)malloc(sizeof(AST_MatchNode));
 	matchNode->graphEntities = elements;
@@ -157,9 +161,15 @@ void Free_AST_MatchNode(AST_MatchNode *matchNode) {
 }
 
 AST_CreateNode* New_AST_CreateNode(Vector *elements) {
-	AST_CreateNode *createNode = (AST_CreateNode*)malloc(sizeof(AST_CreateNode));
-	createNode->graphEntities = elements;
-	return createNode;
+	AST_CreateNode *create_node = (AST_CreateNode*)malloc(sizeof(AST_CreateNode));
+	create_node->graphEntities = elements;
+	return create_node;
+}
+
+AST_SetNode* New_AST_SetNode(Vector *elements) {
+	AST_SetNode *set_node = (AST_SetNode*)malloc(sizeof(AST_SetNode));
+	set_node->set_elements = elements;
+	return set_node;
 }
 
 void Free_AST_CreateNode(AST_CreateNode *createNode) {
@@ -200,7 +210,6 @@ void Free_AST_WhereNode(AST_WhereNode *whereNode) {
 	free(whereNode);
 }
 
-
 AST_ReturnNode* New_AST_ReturnNode(Vector *returnElements, int distinct) {
 	AST_ReturnNode *returnNode = (AST_ReturnNode*)malloc(sizeof(AST_ReturnNode));
 	returnNode->returnElements = returnElements;
@@ -219,31 +228,20 @@ void Free_AST_ReturnNode(AST_ReturnNode *returnNode) {
 	free(returnNode);
 }
 
-AST_ReturnElementNode* New_AST_ReturnElementNode(AST_ReturnElementType type, AST_Variable* variable, const char* aggFunc, const char* alias) {
+AST_ReturnElementNode* New_AST_ReturnElementNode(AST_ArithmeticExpressionNode *exp, const char* alias) {
 	AST_ReturnElementNode *returnElementNode = (AST_ReturnElementNode*)malloc(sizeof(AST_ReturnElementNode));
-	returnElementNode->type = type;
-	returnElementNode->variable = variable;
-	returnElementNode->func = NULL;
+	returnElementNode->exp = exp;
 	returnElementNode->alias = NULL;
 
-	if(type == N_AGG_FUNC) {
-		returnElementNode->func = strdup(aggFunc);
-	}
-
-	if(alias != NULL) {
-		returnElementNode->alias = strdup(alias);
-	}
+	if(alias != NULL) returnElementNode->alias = strdup(alias);
 	
 	return returnElementNode;
 }
 
 void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 	if(returnElementNode != NULL) {
-		Free_AST_Variable(returnElementNode->variable);
+		Free_AST_ArithmeticExpressionNode(returnElementNode->exp);
 
-		if(returnElementNode->type == N_AGG_FUNC) {
-			free(returnElementNode->func);
-		}
 		if(returnElementNode->alias != NULL) {
 			free(returnElementNode->alias);
 		}
@@ -252,16 +250,16 @@ void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 	}
 }
 
-
 AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
-												     AST_CreateNode *createNode, AST_DeleteNode *deleteNode,
-													 AST_ReturnNode *returnNode, AST_OrderNode *orderNode,
-													 AST_LimitNode *limitNode) {
+												     AST_CreateNode *createNode, AST_SetNode *setNode,
+													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
+													 AST_OrderNode *orderNode, AST_LimitNode *limitNode) {
 	AST_QueryExpressionNode *queryExpressionNode = (AST_QueryExpressionNode*)malloc(sizeof(AST_QueryExpressionNode));
 	
 	queryExpressionNode->matchNode = matchNode;
 	queryExpressionNode->whereNode = whereNode;
 	queryExpressionNode->createNode = createNode;
+	queryExpressionNode->setNode = setNode;
 	queryExpressionNode->deleteNode = deleteNode;
 	queryExpressionNode->returnNode = returnNode;
 	queryExpressionNode->orderNode = orderNode;
@@ -279,6 +277,65 @@ void Free_AST_QueryExpressionNode(AST_QueryExpressionNode *queryExpressionNode) 
 	Free_AST_OrderNode(queryExpressionNode->orderNode);
 	free(queryExpressionNode);
 }
+
+AST_Validation _Validate_MATCH_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation _Validate_WHERE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation _Validate_CREATE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation _Validate_SET_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation _Validate_DELETE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation _Validate_RETURN_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+	return AST_VALID;
+}
+
+AST_Validation Validate_AST(const AST_QueryExpressionNode* ast, char **reason) {
+	/* AST must include either a MATCH or CREATE clause. */
+	if(ast->matchNode == NULL && ast->createNode == NULL) {
+		*reason = "Query must specify either MATCH or CREATE clause.";
+		return AST_INVALID;
+	}
+
+	if(_Validate_MATCH_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	if(_Validate_WHERE_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	if(_Validate_CREATE_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	if(_Validate_SET_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	if(_Validate_DELETE_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	if(_Validate_RETURN_Clause(ast, reason) != AST_VALID) {
+		return AST_INVALID;
+	}
+
+	return AST_VALID;
+}
+
 
 AST_Variable* New_AST_Variable(const char* alias, const char* property) {
 	AST_Variable *v = (AST_Variable*)calloc(1, sizeof(AST_Variable));
@@ -372,4 +429,55 @@ void Free_AST_LimitNode(AST_LimitNode* limitNode) {
 	if(limitNode) {
 		free(limitNode);
 	}
+}
+
+AST_ArithmeticExpressionNode* New_AST_AR_EXP_ConstOperandNode(SIValue constant) {
+	AST_ArithmeticExpressionNode *node = malloc(sizeof(AST_ArithmeticExpressionNode));
+	node->type = AST_AR_EXP_OPERAND;
+	node->operand.type = AST_AR_EXP_CONSTANT;
+	node->operand.constant = constant;
+	return node;
+}
+
+AST_ArithmeticExpressionNode* New_AST_AR_EXP_VariableOperandNode(char* alias, char *property) {
+	AST_ArithmeticExpressionNode *node = malloc(sizeof(AST_ArithmeticExpressionNode));
+	node->type = AST_AR_EXP_OPERAND;
+	node->operand.type = AST_AR_EXP_VARIADIC;
+	node->operand.variadic.alias = strdup(alias);
+	if(property) {
+		// This is a collapsed entity.
+		node->operand.variadic.property = strdup(property);
+	} else {
+		node->operand.variadic.property = NULL;
+	}
+	return node;
+}
+
+AST_ArithmeticExpressionNode* New_AST_AR_EXP_OpNode(char *func, Vector *args) {
+	AST_ArithmeticExpressionNode *node = malloc(sizeof(AST_ArithmeticExpressionNode));
+	node->type = AST_AR_EXP_OP;
+	node->op.function = strdup(func);
+	node->op.args = args;
+	return node;
+}
+
+void Free_AST_ArithmeticExpressionNode(AST_ArithmeticExpressionNode *arExpNode) {
+	/* Free arithmetic expression operation. */
+	if(arExpNode->type == AST_AR_EXP_OP) {
+		/* Free each argument. */
+		for(int i = 0; i < Vector_Size(arExpNode->op.args); i++) {
+			AST_ArithmeticExpressionNode *child;
+			Vector_Get(arExpNode->op.args, i, &child);
+			Free_AST_ArithmeticExpressionNode(child);
+		}
+		Vector_Free(arExpNode->op.args);
+	} else {
+		/* Node is an arithmetic expression operand. */
+		if(arExpNode->operand.type == AST_AR_EXP_VARIADIC) {
+			free(arExpNode->operand.variadic.alias);
+			free(arExpNode->operand.variadic.property);
+		}
+	}
+	/* Finaly we can free the node. */
+	free(arExpNode);
 }

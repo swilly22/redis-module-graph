@@ -151,6 +151,8 @@ Edge* Graph_GetEdgeByAlias(const Graph *g, const char *alias) {
  * we'll continue our search with edges.
  * TODO: return also entity type. */
 GraphEntity* Graph_GetEntityByAlias(const Graph *g, const char *alias) {
+    if(g == NULL) return NULL;
+
     GraphEntity *entity = (GraphEntity *)Graph_GetNodeByAlias(g, alias);
     if(entity) {
         return entity;
@@ -200,6 +202,32 @@ char* Graph_GetEdgeAlias(const Graph *g, const Edge *e) {
         }
     }
     
+    return NULL;
+}
+
+GraphEntity** Graph_GetEntityRef(const Graph *g, const char *alias) {
+    int i;
+    char *entity_alias;
+
+    if(g == NULL) return NULL;
+
+    /* Search graph nodes. */
+    for(i = 0; i < g->node_count; i++) {
+        entity_alias = g->node_aliases[i];
+        if(strcmp(entity_alias, alias) == 0) {
+            return (GraphEntity**)&g->nodes[i];
+        }
+    }
+
+    /* Search graph edges. */
+    for(i = 0; i < g->edge_count; i++) {
+        entity_alias = g->edge_aliases[i];
+        if(strcmp(entity_alias, alias) == 0) {
+            return (GraphEntity**)&g->edges[i];
+        }
+    }
+
+    /* Entity doesn't exists in graph. */
     return NULL;
 }
 
