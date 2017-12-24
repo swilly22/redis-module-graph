@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "../../src/arithmetic_expression.h"
+#include "../../src/arithmetic/arithmetic_expression.h"
 #include "../../src/value.h"
 #include "../../src/graph/node.h"
 #include "../../src/arithmetic/agg_funcs.h"
