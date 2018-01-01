@@ -12,20 +12,22 @@ typedef struct {
 int __agg_sumStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
     double n;
-    if (!SIValue_ToDouble(&argv[0], &n)) {
-        if (!SIValue_IsNullPtr(&argv[0])) {
-            // not convertible to double!
-            return Agg_SetError(ctx,
-                                "SUM Could not convert upstream value to double");
-        } else {
-            return AGG_OK;
+    for(int i = 0; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                                    "SUM Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
         }
-    }
-    
-    __agg_sumCtx *ac = Agg_FuncCtx(ctx);
 
-    ac->num++;
-    ac->total += n;
+        __agg_sumCtx *ac = Agg_FuncCtx(ctx);
+
+        ac->num++;
+        ac->total += n;
+    }
 
     return AGG_OK;
 }
@@ -54,20 +56,22 @@ typedef struct {
 int __agg_avgStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
     double n;
-    if (!SIValue_ToDouble(&argv[0], &n)) {
-        if (!SIValue_IsNullPtr(&argv[0])) {
-            // not convertible to double!
-            return Agg_SetError(ctx,
-                                "AVG Could not convert upstream value to double");
-        } else {
-            return AGG_OK;
+    for(int i = 0; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                                    "AVG Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
         }
-    }
-    
-    __agg_avgCtx *ac = Agg_FuncCtx(ctx);
 
-    ac->count++;
-    ac->total += n;
+        __agg_avgCtx *ac = Agg_FuncCtx(ctx);
+
+        ac->count++;
+        ac->total += n;
+    }
 
     return AGG_OK;
 }
@@ -99,19 +103,21 @@ typedef struct {
 int __agg_maxStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
     double n;
-    if (!SIValue_ToDouble(&argv[0], &n)) {
-        if (!SIValue_IsNullPtr(&argv[0])) {
-            // not convertible to double!
-            return Agg_SetError(ctx,
-                                "MAX Could not convert upstream value to double");
-        } else {
-            return AGG_OK;
+    for(int i = 0; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                                    "MAX Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
         }
-    }
-    
-    __agg_maxCtx *ac = Agg_FuncCtx(ctx);
-    if(n > ac->max) {
-        ac->max = n;
+
+        __agg_maxCtx *ac = Agg_FuncCtx(ctx);
+        if(n > ac->max) {
+            ac->max = n;
+        }
     }
 
     return AGG_OK;
@@ -139,19 +145,21 @@ typedef struct {
 int __agg_minStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
     double n;
-    if (!SIValue_ToDouble(&argv[0], &n)) {
-        if (!SIValue_IsNullPtr(&argv[0])) {
-            // not convertible to double!
-            return Agg_SetError(ctx,
-                                "MIN Could not convert upstream value to double");
-        } else {
-            return AGG_OK;
+    for(int i = 0; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                                    "MIN Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
         }
-    }
-    
-    __agg_minCtx *ac = Agg_FuncCtx(ctx);
-    if(n < ac->min) {
-        ac->min = n;
+
+        __agg_minCtx *ac = Agg_FuncCtx(ctx);
+        if(n < ac->min) {
+            ac->min = n;
+        }
     }
 
     return AGG_OK;
@@ -177,8 +185,10 @@ typedef struct {
 } __agg_countCtx;
 
 int __agg_countStep(AggCtx *ctx, SIValue *argv, int argc) {
-    __agg_avgCtx *ac = Agg_FuncCtx(ctx);
-    ac->count++;
+    for(int i = 0; i < argc; i ++) {
+        __agg_countCtx *ac = Agg_FuncCtx(ctx);
+        ac->count++;
+    }
     return AGG_OK;
 }
 
