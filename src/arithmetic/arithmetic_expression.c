@@ -63,7 +63,7 @@ void AR_EXP_Aggregate(const AR_ExpNode *root) {
 
             /* Aggregate. */
             AggCtx *agg = root->op.agg_func;
-            agg->Step(agg, sub_trees, i+1);
+            agg->Step(agg, sub_trees, root->op.child_count);
         } else {
             /* Keep searching for aggregation nodes. */
             for(int i = 0; i < root->op.child_count; i++) {
