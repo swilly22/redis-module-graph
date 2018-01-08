@@ -3,6 +3,8 @@
 #include "aggregate.h"
 #include "repository.h"
 #include "../value.h"
+#include <math.h>
+#include "../util/qsort.h"
 
 typedef struct {
     size_t num;
@@ -207,10 +209,78 @@ AggCtx* Agg_CountFunc() {
 
 //------------------------------------------------------------------------
 
+typedef struct {
+    double percentile;
+    double *values;
+    size_t count;
+} __agg_percCtx;
+
+// This function is agnostic as to percentile method
+int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
+
+    __agg_percCtx *ac = Agg_FuncCtx(ctx);
+
+    // The first argument is the percentile value. This only actually needs to be set once
+    // (and is not actually used except in Reduce)
+    if (!SIValue_ToDouble(&argv[0], &ac->percentile)) {
+        return Agg_SetError(ctx,
+                "PERC_DISC Could not convert percentile argument to double");
+    }
+    if (ac->percentile < 0 || ac->percentile > 1) {
+        return Agg_SetError(ctx,
+                "PERC_DISC requires a percentile value between 0.0 and 1.0");
+    }
+
+    double n;
+    for (int i = 1; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                        "PERC_DISC Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
+        }
+        ac->values[ac->count] = n;
+        ac->count ++;
+    }
+
+    return AGG_OK;
+}
+
+int __agg_percDiscReduceNext(AggCtx *ctx) {
+    __agg_percCtx *ac = Agg_FuncCtx(ctx);
+
+    #define ISLT(a,b) ((*a) < (*b))
+    QSORT(double, ac->values, ac->count, ISLT);
+    // If ac->percentile == 0, employing this formula would give an index of -1
+    int idx = ac->percentile > 0 ? ceil(ac->percentile * ac->count) - 1 : 0;
+    if (idx >= ac->count) {
+        return Agg_SetError(ctx,
+                "PERC_DISC tried to read an out-of-range value");
+    }
+    double n = ac->values[idx];
+    Agg_SetResult(ctx, SI_DoubleVal(n));
+
+    return AGG_OK;
+}
+
+AggCtx* Agg_PercDiscFunc() {
+    __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
+    ac->count = 0;
+    // TODO TODO We should have access to the exact number of values we will be iterating over
+    ac->values = malloc(10000 * sizeof(double));
+    return Agg_Reduce(ac, __agg_percStep, __agg_percDiscReduceNext);
+}
+
+//------------------------------------------------------------------------
+
 void Agg_RegisterFuncs() {
     Agg_RegisterFunc("sum", Agg_SumFunc);
     Agg_RegisterFunc("avg", Agg_AvgFunc);
     Agg_RegisterFunc("max", Agg_MaxFunc);
     Agg_RegisterFunc("min", Agg_MinFunc);
     Agg_RegisterFunc("count", Agg_CountFunc);
+    Agg_RegisterFunc("perc_d", Agg_PercDiscFunc);
 }
