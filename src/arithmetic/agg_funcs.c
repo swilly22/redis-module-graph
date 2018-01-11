@@ -13,6 +13,8 @@ typedef struct {
 
 int __agg_sumStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
+    __agg_sumCtx *ac = Agg_FuncCtx(ctx);
+
     double n;
     for(int i = 0; i < argc; i ++) {
         if (!SIValue_ToDouble(&argv[i], &n)) {
@@ -24,8 +26,6 @@ int __agg_sumStep(AggCtx *ctx, SIValue *argv, int argc) {
                 return AGG_OK;
             }
         }
-
-        __agg_sumCtx *ac = Agg_FuncCtx(ctx);
 
         ac->num++;
         ac->total += n;
@@ -57,6 +57,8 @@ typedef struct {
 
 int __agg_avgStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
+    __agg_avgCtx *ac = Agg_FuncCtx(ctx);
+
     double n;
     for(int i = 0; i < argc; i ++) {
         if (!SIValue_ToDouble(&argv[i], &n)) {
@@ -69,7 +71,6 @@ int __agg_avgStep(AggCtx *ctx, SIValue *argv, int argc) {
             }
         }
 
-        __agg_avgCtx *ac = Agg_FuncCtx(ctx);
 
         ac->count++;
         ac->total += n;
@@ -80,6 +81,7 @@ int __agg_avgStep(AggCtx *ctx, SIValue *argv, int argc) {
 
 int __agg_avgReduceNext(AggCtx *ctx) {
     __agg_avgCtx *ac = Agg_FuncCtx(ctx);
+
     if(ac->count > 0) {
         Agg_SetResult(ctx, SI_DoubleVal(ac->total / ac->count));
     } else {
@@ -104,6 +106,8 @@ typedef struct {
 
 int __agg_maxStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
+    __agg_maxCtx *ac = Agg_FuncCtx(ctx);
+
     double n;
     for(int i = 0; i < argc; i ++) {
         if (!SIValue_ToDouble(&argv[i], &n)) {
@@ -116,7 +120,6 @@ int __agg_maxStep(AggCtx *ctx, SIValue *argv, int argc) {
             }
         }
 
-        __agg_maxCtx *ac = Agg_FuncCtx(ctx);
         if(n > ac->max) {
             ac->max = n;
         }
@@ -146,6 +149,8 @@ typedef struct {
 
 int __agg_minStep(AggCtx *ctx, SIValue *argv, int argc) {
     // convert the value of the input sequence to a double if possible
+    __agg_minCtx *ac = Agg_FuncCtx(ctx);
+
     double n;
     for(int i = 0; i < argc; i ++) {
         if (!SIValue_ToDouble(&argv[i], &n)) {
@@ -158,7 +163,6 @@ int __agg_minStep(AggCtx *ctx, SIValue *argv, int argc) {
             }
         }
 
-        __agg_minCtx *ac = Agg_FuncCtx(ctx);
         if(n < ac->min) {
             ac->min = n;
         }
@@ -187,8 +191,9 @@ typedef struct {
 } __agg_countCtx;
 
 int __agg_countStep(AggCtx *ctx, SIValue *argv, int argc) {
+    __agg_countCtx *ac = Agg_FuncCtx(ctx);
+
     for(int i = 0; i < argc; i ++) {
-        __agg_countCtx *ac = Agg_FuncCtx(ctx);
         ac->count++;
     }
     return AGG_OK;
