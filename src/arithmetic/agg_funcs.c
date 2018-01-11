@@ -222,7 +222,6 @@ typedef struct {
 
 // This function is agnostic as to percentile method
 int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
-
     __agg_percCtx *ac = Agg_FuncCtx(ctx);
 
     // The first argument is the percentile value. This only actually needs to be set once
@@ -231,9 +230,11 @@ int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
         return Agg_SetError(ctx,
                 "PERC_DISC Could not convert percentile argument to double");
     }
-    if (ac->percentile < 0 || ac->percentile > 1) {
-        return Agg_SetError(ctx,
-                "PERC_DISC requires a percentile value between 0.0 and 1.0");
+
+    // The values buffer will be resized to handle 1000 more values every time
+    // its capacity is met
+    if (ac->count + 1 % 1000 == 0) {
+        realloc(ac->values, ac->count + 1000);
     }
 
     double n;
@@ -248,7 +249,7 @@ int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
             }
         }
         ac->values[ac->count] = n;
-        ac->count ++;
+        ac->count++;
     }
 
     return AGG_OK;
@@ -261,10 +262,6 @@ int __agg_percDiscReduceNext(AggCtx *ctx) {
     QSORT(double, ac->values, ac->count, ISLT);
     // If ac->percentile == 0, employing this formula would give an index of -1
     int idx = ac->percentile > 0 ? ceil(ac->percentile * ac->count) - 1 : 0;
-    if (idx >= ac->count) {
-        return Agg_SetError(ctx,
-                "PERC_DISC tried to read an out-of-range value");
-    }
     double n = ac->values[idx];
     Agg_SetResult(ctx, SI_DoubleVal(n));
 
@@ -274,8 +271,9 @@ int __agg_percDiscReduceNext(AggCtx *ctx) {
 AggCtx* Agg_PercDiscFunc() {
     __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
     ac->count = 0;
-    // TODO TODO We should have access to the exact number of values we will be iterating over
-    ac->values = malloc(10000 * sizeof(double));
+    ac->values = malloc(1000 * sizeof(double));
+    // Percentile will be updated by the first call to Step
+    ac->percentile = -1;
     return Agg_Reduce(ac, __agg_percStep, __agg_percDiscReduceNext);
 }
 
@@ -287,5 +285,5 @@ void Agg_RegisterFuncs() {
     Agg_RegisterFunc("max", Agg_MaxFunc);
     Agg_RegisterFunc("min", Agg_MinFunc);
     Agg_RegisterFunc("count", Agg_CountFunc);
-    Agg_RegisterFunc("perc_d", Agg_PercDiscFunc);
+    Agg_RegisterFunc("percentileDisc", Agg_PercDiscFunc);
 }

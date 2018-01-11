@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "../../src/arithmetic/arithmetic_expression.h"
 #include "assert.h"
+#include "../../src/arithmetic/arithmetic_expression.h"
+#include "../../src/arithmetic/agg_funcs.h"
 
 void _test_ar_func(AR_ExpNode *root, SIValue expected) {
     SIValue res = AR_EXP_Evaluate(root);
@@ -16,16 +17,16 @@ void test_percentile_disc() {
     // Percentiles to check
     AR_ExpNode *zero = AR_EXP_NewConstOperandNode(SI_DoubleVal(0));
     AR_ExpNode *dot_one = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.1));
+    AR_ExpNode *one_third = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.33));
     AR_ExpNode *half = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.5));
     AR_ExpNode *one = AR_EXP_NewConstOperandNode(SI_DoubleVal(1));
-    AR_ExpNode *one_third = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.33));
 
     AR_ExpNode *perc = AR_EXP_NewOpNode("PERC_D", 6);
     for (int i = 1; i <= 5; i ++) {
         perc->op.children[i] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i * 2));
     }
 
-    AR_ExpNode *test_percentiles[5] = {zero, dot_one, half, one, one_third};
+    AR_ExpNode *test_percentiles[5] = {zero, dot_one, one_third, half, one};
     // percentile_disc should always return a value actually contained in the set
     AR_ExpNode *expected[5] = {perc->op.children[1], perc->op.children[1],
         perc->op.children[3], perc->op.children[5], perc->op.children[2]};
@@ -44,6 +45,7 @@ void test_percentile_disc() {
     }
     printf("test_percentile_disc - PASS!\n");
 }
+
 int main(int argc, char **argv) {
     AR_RegisterFuncs();
     Agg_RegisterFuncs();
