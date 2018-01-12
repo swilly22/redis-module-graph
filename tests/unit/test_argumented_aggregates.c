@@ -21,23 +21,22 @@ void test_percentile_disc() {
     AR_ExpNode *half = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.5));
     AR_ExpNode *one = AR_EXP_NewConstOperandNode(SI_DoubleVal(1));
 
-    AR_ExpNode *perc = AR_EXP_NewOpNode("PERC_D", 6);
+    AR_ExpNode *children[6];
     for (int i = 1; i <= 5; i ++) {
-        perc->op.children[i] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i * 2));
+        children[i - 1] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i * 2));
     }
 
     AR_ExpNode *test_percentiles[5] = {zero, dot_one, one_third, half, one};
     // percentile_disc should always return a value actually contained in the set
-    AR_ExpNode *expected[5] = {perc->op.children[1], perc->op.children[1],
-        perc->op.children[3], perc->op.children[5], perc->op.children[2]};
+    AR_ExpNode *expected[5] = {children[0], children[0],
+        children[1], children[2], children[4]};
 
+    AR_ExpNode *perc;
     for (int i = 0; i < 5; i ++) {
-        // The first child of this node will be the requested percentile
-        perc->op.children[0] = test_percentiles[i];
-        // Aggregate sets the desired percentile value and adds each child to the list
-        // TODO as such, every iteration of this loop will add all the values again,
-        // which does not affect the calculation result (because percentiles) but still
-        // makes this a kinda weird way to test
+        perc = AR_EXP_NewOpNode("percentileDisc", 6);
+        memcpy(perc->op.children, children, 5 * sizeof(AR_ExpNode*));
+        // The last child of this node will be the requested percentile
+        perc->op.children[5] = test_percentiles[i];
         AR_EXP_Aggregate(perc);
         // Reduce sorts the list and applies the percentile formula
         AR_EXP_Reduce(perc);
