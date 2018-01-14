@@ -42,6 +42,8 @@ void test_percentile_disc() {
         AR_EXP_Reduce(perc);
         _test_ar_func(perc, AR_EXP_Evaluate(expected[i]));
     }
+    AR_EXP_Free(perc);
+
     printf("test_percentile_disc - PASS!\n");
 }
 
