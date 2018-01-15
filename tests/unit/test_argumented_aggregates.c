@@ -21,28 +21,26 @@ void test_percentile_disc() {
     AR_ExpNode *half = AR_EXP_NewConstOperandNode(SI_DoubleVal(0.5));
     AR_ExpNode *one = AR_EXP_NewConstOperandNode(SI_DoubleVal(1));
 
-    AR_ExpNode *children[6];
-    for (int i = 1; i <= 5; i ++) {
-        children[i - 1] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i * 2));
-    }
-
     AR_ExpNode *test_percentiles[5] = {zero, dot_one, one_third, half, one};
     // percentile_disc should always return a value actually contained in the set
-    AR_ExpNode *expected[5] = {children[0], children[0],
-        children[1], children[2], children[4]};
+    int expected[5] = {0, 0, 1, 2, 4};
+    /* AR_ExpNode *expected[5] = {children[0], children[0], */
+        /* children[1], children[2], children[4]}; */
 
     AR_ExpNode *perc;
     for (int i = 0; i < 5; i ++) {
         perc = AR_EXP_NewOpNode("percentileDisc", 6);
-        memcpy(perc->op.children, children, 5 * sizeof(AR_ExpNode*));
+        for (int j = 1; j <= 5; j ++) {
+            perc->op.children[j - 1] = AR_EXP_NewConstOperandNode(SI_DoubleVal(j * 2));
+        }
         // The last child of this node will be the requested percentile
         perc->op.children[5] = test_percentiles[i];
         AR_EXP_Aggregate(perc);
         // Reduce sorts the list and applies the percentile formula
         AR_EXP_Reduce(perc);
-        _test_ar_func(perc, AR_EXP_Evaluate(expected[i]));
+        _test_ar_func(perc, AR_EXP_Evaluate(perc->op.children[expected[i]]));
+        AR_EXP_Free(perc);
     }
-    AR_EXP_Free(perc);
 
     printf("test_percentile_disc - PASS!\n");
 }
