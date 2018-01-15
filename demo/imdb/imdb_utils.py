@@ -38,7 +38,7 @@ def populate_graph(redis_con, redis_graph):
 	# Load actors entities
 	print("Loading actors")
 	actors = {}
-	test_date = date(2017, 1, 1)
+	today = date.today()
 
 	with open(os.path.dirname(os.path.abspath(__file__)) + '/resources/actors.csv', 'r') as f:
 		reader = csv.reader(f, delimiter=',')
@@ -46,7 +46,7 @@ def populate_graph(redis_con, redis_graph):
 			name = row[0]
 			yearOfBirth = int(row[1])
 			movie = row[2]
-			age = test_date.year - yearOfBirth
+			age = today.year - yearOfBirth
 
 			if name not in actors:
 				node = Node(label="actor", properties={'name': name, 'age': age})
