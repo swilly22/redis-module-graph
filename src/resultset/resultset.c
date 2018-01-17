@@ -100,7 +100,7 @@ ResultSetHeader* NewResultSetHeader(const AST_QueryExpressionNode *ast) {
             int match = 1;
 
             if(orderBy->type == N_VARIABLE) {
-                char *orderByColumnName = malloc(sizeof(char) * (strlen(orderBy->alias), strlen(orderBy->property) + 1));
+                char *orderByColumnName = malloc(sizeof(char) * (strlen(orderBy->alias) + strlen(orderBy->property) + 2));
                 sprintf(orderByColumnName, "%s.%s", orderBy->alias, orderBy->property);
                 match = strcmp(orderByColumnName, col->name);
                 free(orderByColumnName);
