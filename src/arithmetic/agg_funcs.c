@@ -6,6 +6,8 @@
 #include <math.h>
 #include "../util/qsort.h"
 
+#define ISLT(a,b) ((*a) < (*b))
+
 typedef struct {
     size_t num;
     double total;
@@ -263,8 +265,6 @@ int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
 int __agg_percDiscReduceNext(AggCtx *ctx) {
     __agg_percCtx *ac = Agg_FuncCtx(ctx);
 
-    #define ISLT(a,b) ((*a) < (*b))
-    QSORT(double, ac->values, ac->count, ISLT);
     // If ac->percentile == 0, employing this formula would give an index of -1
     int idx = ac->percentile > 0 ? ceil(ac->percentile * ac->count) - 1 : 0;
     double n = ac->values[idx];
@@ -273,6 +273,37 @@ int __agg_percDiscReduceNext(AggCtx *ctx) {
     return AGG_OK;
 }
 
+int __agg_percContReduceNext(AggCtx *ctx) {
+    __agg_percCtx *ac = Agg_FuncCtx(ctx);
+
+    QSORT(double, ac->values, ac->count, ISLT);
+
+    if (ac->percentile == 1.0 || ac->count == 1) {
+        Agg_SetResult(ctx, SI_DoubleVal(ac->values[ac->count - 1]));
+        return AGG_OK;
+    }
+
+    double int_val, fraction_val;
+    double float_idx = ac->percentile * (ac->count - 1);
+    // Split the temp value into its integer and fractional values
+    fraction_val = modf(float_idx, &int_val);
+    int index = int_val; // Casting the integral part of the value to an int for convenience
+
+    if (!fraction_val) {
+        // A valid index was requested, so we can directly return a value
+        Agg_SetResult(ctx, SI_DoubleVal(ac->values[index]));
+        return AGG_OK;
+    }
+
+    double lhs, rhs;
+    lhs = ac->values[index] * (1 - fraction_val);
+    rhs = ac->values[index + 1] * fraction_val;
+
+    Agg_SetResult(ctx, SI_DoubleVal(lhs + rhs));
+    return AGG_OK;
+}
+
+// The percentile initializers are identical save for the ReduceNext function they specify
 AggCtx* Agg_PercDiscFunc() {
     __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
     ac->count = 0;
@@ -283,6 +314,16 @@ AggCtx* Agg_PercDiscFunc() {
     return Agg_Reduce(ac, __agg_percStep, __agg_percDiscReduceNext);
 }
 
+
+AggCtx* Agg_PercContFunc() {
+    __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
+    ac->count = 0;
+    ac->values = malloc(1000 * sizeof(double));
+    ac->values_allocated = 1000;
+    // Percentile will be updated by the first call to Step
+    ac->percentile = -1;
+    return Agg_Reduce(ac, __agg_percStep, __agg_percContReduceNext);
+}
 //------------------------------------------------------------------------
 
 void Agg_RegisterFuncs() {
@@ -292,4 +333,5 @@ void Agg_RegisterFuncs() {
     Agg_RegisterFunc("min", Agg_MinFunc);
     Agg_RegisterFunc("count", Agg_CountFunc);
     Agg_RegisterFunc("percentileDisc", Agg_PercDiscFunc);
+    Agg_RegisterFunc("percentileCont", Agg_PercContFunc);
 }
