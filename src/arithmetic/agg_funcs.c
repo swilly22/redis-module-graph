@@ -265,6 +265,8 @@ int __agg_percStep(AggCtx *ctx, SIValue *argv, int argc) {
 int __agg_percDiscReduceNext(AggCtx *ctx) {
     __agg_percCtx *ac = Agg_FuncCtx(ctx);
 
+    QSORT(double, ac->values, ac->count, ISLT);
+
     // If ac->percentile == 0, employing this formula would give an index of -1
     int idx = ac->percentile > 0 ? ceil(ac->percentile * ac->count) - 1 : 0;
     double n = ac->values[idx];
@@ -324,6 +326,74 @@ AggCtx* Agg_PercContFunc() {
     ac->percentile = -1;
     return Agg_Reduce(ac, __agg_percStep, __agg_percContReduceNext);
 }
+
+//------------------------------------------------------------------------
+
+typedef struct {
+    double *values;
+    double total;
+    size_t count;
+    size_t values_allocated;
+} __agg_stdevCtx;
+
+int __agg_StdevStep(AggCtx *ctx, SIValue *argv, int argc) {
+    __agg_stdevCtx *ac = Agg_FuncCtx(ctx);
+
+    if (ac->count + argc > ac->values_allocated) {
+        ac->values_allocated *= 2;
+        ac->values = realloc(ac->values, sizeof(double) * ac->values_allocated);
+    }
+
+    double n;
+    for (int i = 0; i < argc; i ++) {
+        if (!SIValue_ToDouble(&argv[i], &n)) {
+            if (!SIValue_IsNullPtr(&argv[i])) {
+                // not convertible to double!
+                return Agg_SetError(ctx,
+                        "STDEV Could not convert upstream value to double");
+            } else {
+                return AGG_OK;
+            }
+        }
+        ac->values[ac->count] = n;
+        ac->total += n;
+        ac->count++;
+    }
+
+    return AGG_OK;
+}
+
+int __agg_StdevReduceNext(AggCtx *ctx) {
+    __agg_stdevCtx *ac = Agg_FuncCtx(ctx);
+
+    if (ac->count < 2) {
+        Agg_SetResult(ctx, SI_DoubleVal(0));
+        return AGG_OK;
+    }
+
+    double mean = ac->total / ac->count;
+    double sum = 0; // is double a big enough type for this purpose?
+    for (int i = 0; i < ac->count; i ++) {
+        sum += (ac->values[i] - mean) * (ac->values[i] + mean);
+    }
+    // TODO the only difference in the stDevP case is that there is no '-1' here
+    double variance = sum / (ac->count - 1);
+    double stdev = sqrt(variance);
+
+    Agg_SetResult(ctx, SI_DoubleVal(stdev));
+
+    return AGG_OK;
+}
+
+AggCtx* Agg_StdevFunc() {
+    __agg_stdevCtx *ac = malloc(sizeof(__agg_stdevCtx));
+    ac->count = 0;
+    ac->total = 0;
+    ac->values = malloc(1000 * sizeof(double));
+    ac->values_allocated = 1000;
+    return Agg_Reduce(ac, __agg_StdevStep, __agg_StdevReduceNext);
+}
+
 //------------------------------------------------------------------------
 
 void Agg_RegisterFuncs() {
@@ -334,4 +404,5 @@ void Agg_RegisterFuncs() {
     Agg_RegisterFunc("count", Agg_CountFunc);
     Agg_RegisterFunc("percentileDisc", Agg_PercDiscFunc);
     Agg_RegisterFunc("percentileCont", Agg_PercContFunc);
+    Agg_RegisterFunc("stDev", Agg_StdevFunc);
 }

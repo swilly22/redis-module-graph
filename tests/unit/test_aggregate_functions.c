@@ -104,12 +104,48 @@ void test_percentile_disc() {
     printf("test_percentileDisc - PASS!\n");
 }
 
+void test_stdev_sample() {
+    // Edge case - operation called on < 2 values
+    AR_ExpNode *stdev = AR_EXP_NewOpNode("stDev", 1);
+    stdev->op.children[0] = AR_EXP_NewConstOperandNode(SI_DoubleVal(5.1));
+    AR_EXP_Aggregate(stdev);
+    AR_EXP_Reduce(stdev);
+    SIValue result = AR_EXP_Evaluate(stdev);
+    assert(result.doubleval == 0);
+    AR_EXP_Free(stdev);
+
+    // Stdev of squares of first 10 positive integers
+    stdev = AR_EXP_NewOpNode("stDev", 10);
+    double sum = 0;
+    for (int i = 1; i <= 10; i ++) {
+        stdev->op.children[i - 1] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i));
+        sum += i;
+    }
+    double mean = sum / 10;
+    double variance = 0;
+    for (int i = 1; i <= 10; i ++) {
+        variance += pow(i - mean, 2);
+    }
+    variance /= 9;
+    double test_result = sqrt(variance);
+
+    AR_EXP_Aggregate(stdev);
+    AR_EXP_Reduce(stdev);
+    result = AR_EXP_Evaluate(stdev);
+
+    assert(result.doubleval == test_result);
+    AR_EXP_Free(stdev);
+
+    printf("test_stdev - PASS!\n");
+}
+
 int main(int argc, char **argv) {
     AR_RegisterFuncs();
     Agg_RegisterFuncs();
 
     test_percentile_disc();
     test_percentile_cont();
+    test_stdev_sample();
 
     return 0;
 }
