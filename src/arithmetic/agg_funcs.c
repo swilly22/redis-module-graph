@@ -316,7 +316,6 @@ AggCtx* Agg_PercDiscFunc() {
     return Agg_Reduce(ac, __agg_percStep, __agg_percDiscReduceNext);
 }
 
-
 AggCtx* Agg_PercContFunc() {
     __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
     ac->count = 0;
