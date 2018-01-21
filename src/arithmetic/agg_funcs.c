@@ -336,6 +336,7 @@ typedef struct {
     double total;
     size_t count;
     size_t values_allocated;
+    int is_sampled;
 } __agg_stdevCtx;
 
 int __agg_StdevStep(AggCtx *ctx, SIValue *argv, int argc) {
@@ -378,8 +379,8 @@ int __agg_StdevReduceNext(AggCtx *ctx) {
     for (int i = 0; i < ac->count; i ++) {
         sum += (ac->values[i] - mean) * (ac->values[i] + mean);
     }
-    // TODO the only difference in the stDevP case is that there is no '-1' here
-    double variance = sum / (ac->count - 1);
+    // is_sampled will be equal to 1 in the Stdev case and 0 in the StdevP case
+    double variance = sum / (ac->count - ac->is_sampled);
     double stdev = sqrt(variance);
 
     Agg_SetResult(ctx, SI_DoubleVal(stdev));
@@ -390,11 +391,20 @@ int __agg_StdevReduceNext(AggCtx *ctx) {
 
 AggCtx* Agg_StdevFunc() {
     __agg_stdevCtx *ac = malloc(sizeof(__agg_stdevCtx));
+    ac->is_sampled = 1;
     ac->count = 0;
     ac->total = 0;
     ac->values = malloc(1024 * sizeof(double));
     ac->values_allocated = 1024;
     return Agg_Reduce(ac, __agg_StdevStep, __agg_StdevReduceNext);
+}
+
+// StdevP is identical to Stdev save for an altered value we can check for with a bool
+AggCtx* Agg_StdevPFunc() {
+    AggCtx *func = Agg_StdevFunc();
+    __agg_stdevCtx *ac = Agg_FuncCtx(func);
+    ac->is_sampled = 0;
+    return func;
 }
 
 //------------------------------------------------------------------------
@@ -408,4 +418,5 @@ void Agg_RegisterFuncs() {
     Agg_RegisterFunc("percentileDisc", Agg_PercDiscFunc);
     Agg_RegisterFunc("percentileCont", Agg_PercContFunc);
     Agg_RegisterFunc("stDev", Agg_StdevFunc);
+    Agg_RegisterFunc("stDevP", Agg_StdevPFunc);
 }

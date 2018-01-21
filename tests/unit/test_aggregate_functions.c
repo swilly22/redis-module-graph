@@ -104,7 +104,8 @@ void test_percentile_disc() {
     printf("test_percentileDisc - PASS!\n");
 }
 
-void test_stdev_sample() {
+// Tests both stDev and stDevP
+void test_stdev() {
     // Edge case - operation called on < 2 values
     AR_ExpNode *stdev = AR_EXP_NewOpNode("stDev", 1);
     stdev->op.children[0] = AR_EXP_NewConstOperandNode(SI_DoubleVal(5.1));
@@ -122,21 +123,40 @@ void test_stdev_sample() {
         sum += i;
     }
     double mean = sum / 10;
-    double variance = 0;
-    for (int i = 1; i <= 10; i ++) {
-        variance += pow(i - mean, 2);
+    double tmp_variance = 0;
+    for (int i = 1; i <= 10; i ++)  {
+        tmp_variance += pow(i - mean, 2);
     }
-    variance /= 9;
-    double test_result = sqrt(variance);
+    double sample_variance = tmp_variance / 9;
+    double sample_result = sqrt(sample_variance);
 
     AR_EXP_Aggregate(stdev);
     AR_EXP_Reduce(stdev);
     result = AR_EXP_Evaluate(stdev);
 
-    assert(result.doubleval == test_result);
+    assert(result.doubleval == sample_result);
     AR_EXP_Free(stdev);
 
-    printf("test_stdev - PASS!\n");
+    printf("test_stDev - PASS!\n");
+
+    // Perform last test with stDevP
+    AR_ExpNode *stdevp = AR_EXP_NewOpNode("stDevP", 10);
+    for (int i = 1; i <= 10; i ++) {
+        stdevp->op.children[i - 1] = AR_EXP_NewConstOperandNode(SI_DoubleVal(i));
+    }
+
+    double pop_variance = tmp_variance / 10;
+    double pop_result = sqrt(pop_variance);
+
+    AR_EXP_Aggregate(stdevp);
+    AR_EXP_Reduce(stdevp);
+    result = AR_EXP_Evaluate(stdevp);
+
+    assert(result.doubleval == pop_result);
+    AR_EXP_Free(stdevp);
+
+    printf("test_stDevP - PASS!\n");
+
 }
 
 int main(int argc, char **argv) {
@@ -145,7 +165,7 @@ int main(int argc, char **argv) {
 
     test_percentile_disc();
     test_percentile_cont();
-    test_stdev_sample();
+    test_stdev();
 
     return 0;
 }
