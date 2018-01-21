@@ -272,6 +272,7 @@ int __agg_percDiscReduceNext(AggCtx *ctx) {
     double n = ac->values[idx];
     Agg_SetResult(ctx, SI_DoubleVal(n));
 
+    free(ac->values);
     return AGG_OK;
 }
 
@@ -302,6 +303,8 @@ int __agg_percContReduceNext(AggCtx *ctx) {
     rhs = ac->values[index + 1] * fraction_val;
 
     Agg_SetResult(ctx, SI_DoubleVal(lhs + rhs));
+
+    free(ac->values);
     return AGG_OK;
 }
 
@@ -309,8 +312,8 @@ int __agg_percContReduceNext(AggCtx *ctx) {
 AggCtx* Agg_PercDiscFunc() {
     __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
     ac->count = 0;
-    ac->values = malloc(1000 * sizeof(double));
-    ac->values_allocated = 1000;
+    ac->values = malloc(1024 * sizeof(double));
+    ac->values_allocated = 1024;
     // Percentile will be updated by the first call to Step
     ac->percentile = -1;
     return Agg_Reduce(ac, __agg_percStep, __agg_percDiscReduceNext);
@@ -319,8 +322,8 @@ AggCtx* Agg_PercDiscFunc() {
 AggCtx* Agg_PercContFunc() {
     __agg_percCtx *ac = malloc(sizeof(__agg_percCtx));
     ac->count = 0;
-    ac->values = malloc(1000 * sizeof(double));
-    ac->values_allocated = 1000;
+    ac->values = malloc(1024 * sizeof(double));
+    ac->values_allocated = 1024;
     // Percentile will be updated by the first call to Step
     ac->percentile = -1;
     return Agg_Reduce(ac, __agg_percStep, __agg_percContReduceNext);
@@ -371,7 +374,7 @@ int __agg_StdevReduceNext(AggCtx *ctx) {
     }
 
     double mean = ac->total / ac->count;
-    double sum = 0; // is double a big enough type for this purpose?
+    long double sum = 0;
     for (int i = 0; i < ac->count; i ++) {
         sum += (ac->values[i] - mean) * (ac->values[i] + mean);
     }
@@ -381,6 +384,7 @@ int __agg_StdevReduceNext(AggCtx *ctx) {
 
     Agg_SetResult(ctx, SI_DoubleVal(stdev));
 
+    free(ac->values);
     return AGG_OK;
 }
 
@@ -388,8 +392,8 @@ AggCtx* Agg_StdevFunc() {
     __agg_stdevCtx *ac = malloc(sizeof(__agg_stdevCtx));
     ac->count = 0;
     ac->total = 0;
-    ac->values = malloc(1000 * sizeof(double));
-    ac->values_allocated = 1000;
+    ac->values = malloc(1024 * sizeof(double));
+    ac->values_allocated = 1024;
     return Agg_Reduce(ac, __agg_StdevStep, __agg_StdevReduceNext);
 }
 

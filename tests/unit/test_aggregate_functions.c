@@ -41,7 +41,7 @@ void test_percentile_cont() {
 
     for (int i = 0; i < 5; i ++) {
         x = percentile_doubles[i] * (count - 1);
-        lower_idx =  floor(x);
+        lower_idx = floor(x);
         upper_idx = ceil(x);
 
         if (lower_idx == upper_idx || lower_idx == (count - 1)) {

@@ -251,13 +251,6 @@ void _aggregateResultSet(RedisModuleCtx* ctx, ResultSet* set) {
 
     /* Scan entire groups cache. */
     while(CacheGroupIterNext(iter, &key, &group) != 0) {
-        /* Finalize each aggregation function. */
-        for(int i = 0; i < Vector_Size(group->aggregationFunctions); i++) {
-            AR_ExpNode *agg_exp = NULL;
-            Vector_Get(group->aggregationFunctions, i, &agg_exp);
-            AR_EXP_Reduce(agg_exp);
-        }
-
         /* Construct response */
         Record* record = Record_FromGroup(set->header, group);
         if(ResultSet_AddRecord(set, record) == RESULTSET_FULL) {
