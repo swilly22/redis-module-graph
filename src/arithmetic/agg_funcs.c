@@ -283,6 +283,7 @@ int __agg_percContReduceNext(AggCtx *ctx) {
 
     if (ac->percentile == 1.0 || ac->count == 1) {
         Agg_SetResult(ctx, SI_DoubleVal(ac->values[ac->count - 1]));
+        free(ac->values);
         return AGG_OK;
     }
 
@@ -295,6 +296,7 @@ int __agg_percContReduceNext(AggCtx *ctx) {
     if (!fraction_val) {
         // A valid index was requested, so we can directly return a value
         Agg_SetResult(ctx, SI_DoubleVal(ac->values[index]));
+        free(ac->values);
         return AGG_OK;
     }
 
@@ -371,6 +373,7 @@ int __agg_StdevReduceNext(AggCtx *ctx) {
 
     if (ac->count < 2) {
         Agg_SetResult(ctx, SI_DoubleVal(0));
+        free(ac->values);
         return AGG_OK;
     }
 
