@@ -18,6 +18,12 @@ test_agg_sum:
 	@(sh -c ./test_agg_sum)
 .PHONY: test_agg_sum
 
+aggregate_functions: test_aggregate_functions.o
+	$(CC) $(CFLAGS)  -o test_aggregate_functions test_aggregate_functions.o $(DEPS) $(LDFLAGS)
+test_aggregate_functions:
+	@(sh -c ./test_aggregate_functions)
+.PHONY: test_aggregate_functions
+
 edge: test_edge.o
 	$(CC) $(CFLAGS)  -o test_edge test_edge.o  $(DEPS) $(LDFLAGS)
 test_edge:
@@ -72,8 +78,15 @@ test_arithmetic_expression:
 	@(sh -c ./test_arithmetic_expression)
 .PHONY: test_arithmetic_expression
 
+ast: test_ast.o
+	$(CC) $(CFLAGS)  -o test_ast test_ast.o  $(DEPS) $(LDFLAGS)
+test_ast:
+	@(sh -c ./test_ast)
+.PHONY: test_ast
+
 all: build test
 
-build: agg_sum edge node graph value triplet resultset_record hexastore filter_tree arithmetic_expression
 
-test: test_agg_sum test_edge test_node test_graph test_value test_triplet test_resultset_record test_hexastore test_filter_tree test_arithmetic_expression
+build: agg_sum edge node graph value triplet resultset_record hexastore filter_tree arithmetic_expression aggregate_functions ast
+
+test: test_agg_sum test_edge test_node test_graph test_value test_triplet test_resultset_record test_hexastore test_filter_tree test_arithmetic_expression test_aggregate_functions test_ast
