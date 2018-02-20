@@ -122,10 +122,32 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     const char *graphName;
     const char *query;
     RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query);
-    
+
     /* Parse query, get AST. */
     char *errMsg = NULL;
-    AST_QueryExpressionNode* ast = ParseQuery(query, strlen(query), &errMsg);
+
+    AST_QueryExpressionNode* ast;
+
+    // TODO hacking our way around the AST to test out indices
+    if (!strncasecmp(query, "CREATE INDEX ON ", 16)) {
+      // Actual Neo4j syntax:
+      // CREATE INDEX ON :Person(firstname)
+      // What we'll accept for the moment:
+      // CREATE INDEX ON Person firstname
+
+      // MATCH (a:actor) RETURN a.age
+      char label[256], property[256];
+      if (sscanf(query + 16, "%s %s", label, property) != 2) {
+        return REDISMODULE_ERR;
+      }
+      char dummy_query[1024];
+      sprintf(dummy_query, "MATCH (dummy_alias:%s {%s : 0}) RETURN dummy_alias", label, property);
+
+      fprintf(stderr, "Constructing index: building execution plan as \"%s\"\n", dummy_query);
+      query = dummy_query;
+    }
+
+    ast = ParseQuery(query, strlen(query), &errMsg);
     
     if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
@@ -142,13 +164,40 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     
     /* Modify AST */
     if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
-        /* Expend collapsed nodes. */
+        /* Expand collapsed nodes. */
         ReturnClause_ExpandCollapsedNodes(ctx, ast, graphName);
     }
 
     ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
     ResultSet* resultSet = ExecutionPlan_Execute(plan);
 
+    // TODO hack continued - output skiplist index in linear format on stdout
+    if (plan->root->operation->type == OPType_BUILD_INDEX) {
+      #include "util/skiplist.h"
+      #include "execution_plan/ops/op_build_index.h"
+      skiplist *constructed_index =  ((OpBuildIndex *)plan->root->operation)->index;
+      skiplistIterator it = skiplistIterateAll(constructed_index);
+      void *key, *val;
+      /*
+       * TODO:
+       * This is an unnecessarily complicated expression for the purpose of debugging.
+       * We would achieve the same effect with:
+       * while (val = skiplistIterator_Next(&it))
+       * However, I want to print the keys within the skiplist to validate associations, so we'll
+       * stick with this for the moment!
+       */
+      while ((key = currentIteratorKey(&it)) && (val = skiplistIterator_Next(&it))) {
+        printf("indexed value: %lf", ((SIValue*)key)->doubleval);
+        // TODO I don't think this break *should* be necessary, but some debug outputs
+        // will cause segfaults in its absence
+        if (!it.current) break;
+        for (int j = 0; j < ((Node*)val)->prop_count; j ++) {
+          printf("\nprop \"%s\":\t",  ((Node*)val)->properties[j].name);
+          agnosticPrintSIVal(stdout, &((Node*)val)->properties[j].value); 
+        }
+        printf("\n\n");
+      }
+    }
     /* Send result-set back to client. */
     ExecutionPlanFree(plan);
     ResultSet_Replay(ctx, resultSet);
