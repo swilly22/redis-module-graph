@@ -179,6 +179,11 @@ typedef struct {
 	AST_ColumnNodeType type;
 } AST_ColumnNode;
 
+ typedef struct {
+  Vector *graphEntities;
+  const char *nodeProperty;
+} AST_BuildIndexNode;
+
 typedef struct {
 	AST_MatchNode *matchNode;
 	AST_CreateNode *createNode;
