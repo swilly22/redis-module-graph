@@ -426,3 +426,26 @@ size_t SIValue_StringConcat(SIValue* strings, unsigned int string_count, char** 
   (*concat)[offset] = 0;
   return offset;
 }
+
+void agnosticPrintSIVal(FILE *outstream, SIValue *v) {
+  switch (v->type) {
+    case T_STRING:
+      fprintf(outstream, "%s", v->stringval.str);
+      break;
+    case T_INT32:
+      fprintf(outstream, "%d", v->intval);
+      break;
+    case T_INT64:
+      fprintf(outstream, "%ld", v->longval);
+      break;
+    case T_UINT:
+      fprintf(outstream, "%u", v->intval);
+      break;
+    case T_FLOAT:
+      fprintf(outstream, "%lf", v->floatval);
+      break;
+    case T_DOUBLE:
+      fprintf(outstream, "%lf", v->doubleval);
+      break;
+  }
+}

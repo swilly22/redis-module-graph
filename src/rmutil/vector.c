@@ -84,3 +84,8 @@ inline int Vector_Size(const Vector *v) { return v->top; }
 
 /* return the actual capacity */
 inline int Vector_Cap(Vector *v) { return v->cap; }
+
+// Convenience function for debugging vector elements
+void* vector_val(Vector *v, size_t pos) {
+  return v->data + (pos * v->elemSize);
+}

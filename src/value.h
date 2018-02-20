@@ -108,4 +108,8 @@ void SIValue_FromString(SIValue *v, char *s, size_t s_len);
 /* Concats strings as a comma seperated string. */
 size_t SIValue_StringConcat(SIValue* strings, unsigned int string_count, char** concat);
 
+// Only being used for debug purposes
+#include <stdio.h>
+void agnosticPrintSIVal(FILE *outstream, SIValue *v);
+
 #endif

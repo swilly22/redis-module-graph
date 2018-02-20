@@ -72,4 +72,6 @@ void Vector_Free(Vector *v);
 
 int __vecotr_PutPtr(Vector *v, size_t pos, void *elem);
 
+void* vector_val(Vector *v, size_t pos);
+
 #endif
