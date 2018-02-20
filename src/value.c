@@ -58,6 +58,8 @@ SIValue SI_Clone(SIValue v) {
     return SI_FloatVal(v.floatval);
   case T_DOUBLE:
     return SI_DoubleVal(v.doubleval);
+  case T_PTR:
+    return SI_PtrVal(v.ptrval);
   case T_INF:
     return SI_InfVal();
   case T_NEGINF:
