@@ -105,7 +105,7 @@ skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
 skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
                          skiplistValCmpFunc vcmp) {
   int j;
-  skiplist *sl = zmalloc(sizeof(*sl));
+  skiplist *sl = zmalloc(sizeof(struct skiplist));
   sl->level = 1;
   sl->length = 0;
   sl->header = skiplistCreateNode(SKIPLIST_MAXLEVEL, NULL, NULL);
@@ -169,7 +169,7 @@ skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val) {
   x = sl->header;
   for (i = sl->level - 1; i >= 0; i --) {
     /* store rank that is crossed to reach the insert position */
-    rank[i] = i == (sl->level - 1) ? 0 : rank[i + 1];
+    rank[i] = (i == (sl->level - 1)) ? 0 : rank[i + 1];
     while (x->level[i].forward &&
            sl->compare(x->level[i].forward->obj, obj, sl->cmpCtx) < 0) {
       rank[i] += x->level[i].span;

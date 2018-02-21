@@ -138,6 +138,8 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
       // MATCH (a:actor) RETURN a.age
       char label[256], property[256];
       if (sscanf(query + 16, "%s %s", label, property) != 2) {
+        char indexError[] = "Error building index: the only supported syntax for constructing indices is \"CREATE INDEX ON [label] [property]\"";
+        RedisModule_ReplyWithError(ctx, indexError);
         return REDISMODULE_ERR;
       }
       char dummy_query[1024];
@@ -186,17 +188,16 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
        * However, I want to print the keys within the skiplist to validate associations, so we'll
        * stick with this for the moment!
        */
+      FILE *out = fopen("index_out.txt", "w");
       while ((key = currentIteratorKey(&it)) && (val = skiplistIterator_Next(&it))) {
-        printf("indexed value: %lf", ((SIValue*)key)->doubleval);
-        // TODO I don't think this break *should* be necessary, but some debug outputs
-        // will cause segfaults in its absence
-        if (!it.current) break;
+        fprintf(out, "indexed value: %lf", ((SIValue*)key)->doubleval);
         for (int j = 0; j < ((Node*)val)->prop_count; j ++) {
-          printf("\nprop \"%s\":\t",  ((Node*)val)->properties[j].name);
-          agnosticPrintSIVal(stdout, &((Node*)val)->properties[j].value); 
+          fprintf(out, "\nprop \"%s\":\t",  ((Node*)val)->properties[j].name);
+          agnosticPrintSIVal(out, &((Node*)val)->properties[j].value);
         }
-        printf("\n\n");
+        fprintf(out, "\n\n");
       }
+      fclose(out);
     }
     /* Send result-set back to client. */
     ExecutionPlanFree(plan);
@@ -254,7 +255,7 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     
     /* Modify AST */
     if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
-        /* Expend collapsed nodes. */
+        /* Expand collapsed nodes. */
         ReturnClause_ExpandCollapsedNodes(ctx, ast, graphName);
     }
 

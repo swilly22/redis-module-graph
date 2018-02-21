@@ -11,20 +11,16 @@
 
 int compareValues(void *a, void *b);
 int compareKeys(void *p1, void *p2, void *ctx);
-// WIP
-// This is just an AllNodeScan with a skip_list right now
+
 typedef struct {
   OpBase op;
-  // These are in an AllNodeScan, but I do not know if I need them
-  // Node **node;            [> node being scanned <]
-  // Node *_node;
-  LabelStore *store;           /* store being scanned */
+  LabelStore *store;      /* store being scanned */
   RedisModuleCtx *ctx;    /* redis module API context */
-  const char *graph; // graph name, used to access LabelStore
-  LabelStoreIterator *iter; // what sets iter? I want to iterate only over nodes that match the label stored here (and am not doing that right now)
-  const char *label; // Is this necessary? I dunno.
   const char *indexed_property;
-  skiplist *index; // Probably something like this?
+  LabelStoreIterator *iter;
+  // TODO this is, post-execution, a complete index of property->node, but is not getting 
+  // but is not persisted alongside the graph yet
+  skiplist *index;
 } OpBuildIndex;
 
 OpBase* NewBuildIndexOp(RedisModuleCtx *ctx, Graph *g, const char *graph_name, const char *label, const char *property);

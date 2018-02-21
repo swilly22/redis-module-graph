@@ -17,33 +17,34 @@ static inline double compKey(SIValue *v) {
 }
 
 /*
-// skiplist object comparator
-int compare(void *a, void *b, void *ctx) {
-  // TODO I dunno what this is about, why do I need to compare the objects?
-  return strcmp(a, b);
-  // return 0;
-}
-
-// skiplist value comparator
-int compareVals(void *p1, void *p2) {
-  return compVal((SIValue *)p1) < compVal((SIValue *)p2);
-}
-*/
-// skiplist value comparator
+ * skiplist value comparator:
+ * This is soleley to ensure that
+ * we do not insert duplicates.
+ */
 int compareValues(void *a, void *b) {
-  // TODO vals, for us, are nodes - is there a comparator
-  // for them, or even a need for them?
-  return (a > b);
+  return a != b;
 }
 
-// skiplist key comparator
-// TODO what is with the context here?
+/*
+ * skiplist key comparator:
+ * We use strcmp-style returns for comparing keys.
+ * `ctx` is included to match the skiplist source,
+ * but currently has no purpose.
+ */
 int compareKeys(void *p1, void *p2, void *ctx) {
-  return compKey((SIValue *)p1) < compKey((SIValue *)p2);
+  double a = compKey((SIValue *)p1);
+  double b = compKey((SIValue *)p2);
+
+  if (a > b) {
+    return 1;
+  } else if (a < b) {
+    return -1;
+  } else {
+    return 0;
+  }
 }
 
 OpBase* NewBuildIndexOp(RedisModuleCtx *ctx, Graph *g, const char *graph_name, const char *label, const char *property) {
-  // Dunno if we actually need a LabelStore (this is from NewOpBuildIndex)
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graph_name, label);
   if(store == NULL) {
     return NULL;
@@ -53,7 +54,6 @@ OpBase* NewBuildIndexOp(RedisModuleCtx *ctx, Graph *g, const char *graph_name, c
 
   op_build_index->ctx = ctx;
   op_build_index->store = store;
-  op_build_index->graph = graph_name;
   op_build_index->iter = LabelStore_Search(store, "");
 
   // Set our Op operations
@@ -64,10 +64,9 @@ OpBase* NewBuildIndexOp(RedisModuleCtx *ctx, Graph *g, const char *graph_name, c
   op_build_index->op.free = BuildIndexFree;
   op_build_index->op.modifies = NULL;
   
-  op_build_index->label = label;
   op_build_index->indexed_property = property;
-  // 
   op_build_index->index = skiplistCreate(compareKeys, NULL, compareValues);
+
   return (OpBase*)op_build_index;
 }
 
@@ -89,24 +88,14 @@ OpResult BuildIndexConsume(OpBase *opBase, Graph* graph) {
 
   // Retrieve a node by label, and find the property we want to index on
   // Verify that property is numeric (does it also need to always be of same numeric type?)
-  // Can maybe add it to skip list here, but probably more efficient to gather all values first
-  // (saves us from reallocing, and I assume that skip lists are like other sorted lists in terms of
-  // cost)
-  // Lots of stuff in here is redundant, but that makes it easy to read! Clean up later.
   EntityProperty *current_prop;
   SIValue *sort_value;
-  double raw_property_val;
   for (int i = 0; i < node->prop_count; i ++) {
     current_prop = node->properties + i;
-    // We're currently only supporting the indexing of numeric types, so let's verify that here.
-    // Can we support multiple numeric types in one index?
-    // Further, is it okay if the property name matches on a non-numeric value?
-    if (current_prop->value.type | SI_NUMERIC && !strcmp(current_prop->name, op->indexed_property)) {
-      // Index this node on this property
-      // An SIValue is 24 bytes (although I feel like it should only be 16?)
-      // We could maybe save space by using just the inner value as a key, but premature
+    // If this property matches our new index and is any supported numeric,
+    // let's index this node (we're validing numericity with a bitmask)
+    if ((current_prop->value.type | SI_NUMERIC) && !strcmp(current_prop->name, op->indexed_property)) {
       sort_value = &current_prop->value;  
-      // SIValue_ToDouble(&to_index, &raw_property_val);
       skiplistInsert(op->index, (void*)sort_value, (void*)node);
       break;
     }
@@ -114,16 +103,8 @@ OpResult BuildIndexConsume(OpBase *opBase, Graph* graph) {
   return OP_OK;
 }
 
+// As with ProduceResults, not important for this op currently
 OpResult BuildIndexReset(OpBase *op) {
-  OpBuildIndex *buildIndex = (OpBuildIndex*)op;
-
-  /* *buildIndex->node = buildIndex->_node; */
-
-  if(buildIndex->iter != NULL) {
-    LabelStoreIterator_Free(buildIndex->iter);
-  }
-
-  buildIndex->iter = LabelStore_Search(buildIndex->store, "");
   return OP_OK;
 }
 
