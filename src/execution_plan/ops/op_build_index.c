@@ -18,7 +18,7 @@ static inline double compKey(SIValue *v) {
 
 /*
  * skiplist value comparator:
- * This is soleley to ensure that
+ * This is solely to ensure that
  * we do not insert duplicates.
  */
 int compareValues(void *a, void *b) {
@@ -63,7 +63,7 @@ OpBase* NewBuildIndexOp(RedisModuleCtx *ctx, Graph *g, const char *graph_name, c
   op_build_index->op.reset = BuildIndexReset;
   op_build_index->op.free = BuildIndexFree;
   op_build_index->op.modifies = NULL;
-  
+
   op_build_index->indexed_property = property;
   op_build_index->index = skiplistCreate(compareKeys, NULL, compareValues);
 
@@ -95,7 +95,7 @@ OpResult BuildIndexConsume(OpBase *opBase, Graph* graph) {
     // If this property matches our new index and is any supported numeric,
     // let's index this node (we're validing numericity with a bitmask)
     if ((current_prop->value.type | SI_NUMERIC) && !strcmp(current_prop->name, op->indexed_property)) {
-      sort_value = &current_prop->value;  
+      sort_value = &current_prop->value;
       skiplistInsert(op->index, (void*)sort_value, (void*)node);
       break;
     }

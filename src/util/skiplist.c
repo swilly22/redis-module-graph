@@ -220,7 +220,7 @@ skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val) {
   return x;
 }
 
-/* 
+/*
  * Internal function used by skiplistDelete, it needs an array of other
  * skiplist nodes that point to the node to delete in order to update
  * all the references of the node we are going to remove.
@@ -290,7 +290,7 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
   return 0; /* not found */
 }
 
-/* 
+/*
  * Search for the element in the skip list, if found the
  * node pointer is returned, otherwise NULL is returned.
  */
