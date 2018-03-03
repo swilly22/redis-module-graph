@@ -361,17 +361,19 @@ SIValue AR_LEFT(SIValue *argv, int argc) {
 
     assert(argv[0].type == T_STRING);
     assert(argv[1].type == T_DOUBLE);
-    
-    char* left_str = strdup(argv[0].stringval.str);
-    size_t str_len = argv[0].stringval.len;
-    size_t left = (size_t)argv[1].doubleval;
 
-    /* Boundry check. */
-    if(left < str_len) {
-        left_str[left] = 0;
+    char* left_str;
+    size_t newlen = (size_t)argv[1].doubleval;
+    if (strlen(argv[0].stringval) <= newlen) {
+      // No need to truncate this string based on the requested length
+      left_str = strdup(argv[0].stringval);
+    } else {
+      left_str = malloc((newlen + 1) * sizeof(char));
+      memcpy(left_str, argv[0].stringval, newlen * sizeof(char));
+      left_str[newlen] = '\0';
     }
 
-    return SI_StringValC(left_str);
+    return (SIValue){.stringval = left_str, .type = T_STRING};
 }
 
 SIValue AR_LTRIM(SIValue *argv, int argc) {
@@ -379,17 +381,15 @@ SIValue AR_LTRIM(SIValue *argv, int argc) {
 
     assert(argc == 1 && argv[0].type == T_STRING);
     
-    char *str = argv[0].stringval.str;
-    int i = 0;
+    char *trimmed = argv[0].stringval;
 
-    while(str[i++] == ' ');
-    if(i>0) i--;
+    while(*trimmed == ' ') {
+      trimmed ++;
+    }
 
-    size_t trimmed_len = argv[0].stringval.len - i;
-    char *trimmed = malloc(sizeof(char) * trimmed_len);
+    char *ret = strdup(trimmed);
 
-    memcpy(trimmed, str+i, trimmed_len);
-    return SI_StringValC(trimmed);
+    return (SIValue){.stringval = ret, .type = T_STRING};
 }
 
 SIValue AR_RIGHT(SIValue *argv, int argc) {
@@ -397,50 +397,54 @@ SIValue AR_RIGHT(SIValue *argv, int argc) {
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
     assert(argv[0].type == T_STRING);
     assert(argv[1].type == T_DOUBLE);
-    
-    char* right_str = strdup(argv[0].stringval.str);
-    size_t str_len = argv[0].stringval.len;
-    size_t right = (size_t)argv[1].doubleval;
 
-    /* Boundry check. */
-    if(right < str_len) {
-        /* TODO: free has to be called on original pointer position. */
-        right_str += str_len - right;
+    char *right_str;
+    int newlen = (int)argv[1].doubleval;
+    int start = strlen(argv[0].stringval) - newlen;
+
+    if (start <= 0) {
+      // No need to truncate this string based on the requested length
+      right_str = strdup(argv[0].stringval);
+    } else {
+      right_str = malloc((newlen + 1) * sizeof(char));
+      memcpy(right_str, argv[0].stringval + start, newlen * sizeof(char));
+      right_str[newlen] = '\0';
     }
 
-    return SI_StringValC(right_str);
+    return (SIValue){.stringval = right_str, .type = T_STRING};
 }
 
 SIValue AR_RTRIM(SIValue *argv, int argc) {
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
     assert(argc == 1 && argv[0].type == T_STRING);
     
-    char *str = argv[0].stringval.str;
-    int i = argv[0].stringval.len-1;
+    char *str = argv[0].stringval;
+    int i = strlen(str) - 1;
     
     while(i >= 0 && str[i] == ' ') {
-         i--;
+      i --;
     }
     
     size_t trimmed_len = i+1; /* NULL terminator.*/
-    char *trimmed = malloc(sizeof(char) * (trimmed_len));
+    char *trimmed = malloc(sizeof(char) * trimmed_len);
 
     memcpy(trimmed, str, trimmed_len);
-    return SI_StringValC(trimmed);
+    trimmed[trimmed_len] = '\0';
+    return (SIValue){.stringval = trimmed, .type = T_STRING};
 }
 
 SIValue AR_REVERSE(SIValue *argv, int argc) {
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
     assert(argv[0].type == T_STRING);
-    char *str = argv[0].stringval.str;
-    size_t str_len = argv[0].stringval.len;
+    char *str = argv[0].stringval;
+    size_t str_len = strlen(argv[0].stringval);
     char* reverse = malloc(sizeof(char) * (str_len+1));
     
     int i = str_len-1;
     int j = 0;
     while(i >= 0) { reverse[j++] = str[i--]; }
     reverse[j] = 0;
-    return SI_StringValC(reverse);
+    return (SIValue){.stringval = reverse, .type = T_STRING};
 }
 
 SIValue AR_SUBSTRING(SIValue *argv, int argc) {
@@ -455,8 +459,8 @@ SIValue AR_SUBSTRING(SIValue *argv, int argc) {
     */
     assert(argc > 1);
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
-    char *original = argv[0].stringval.str;
-    size_t original_len = argv[0].stringval.len;
+    char *original = argv[0].stringval;
+    size_t original_len = strlen(argv[0].stringval);
     uint start = (uint)argv[1].doubleval;
     size_t length;
     char *substring;
@@ -477,9 +481,10 @@ SIValue AR_SUBSTRING(SIValue *argv, int argc) {
 
     assert(start >=0 && length >=0);
     
-    substring = calloc(length+1, sizeof(char));
+    substring = malloc(length+1 * sizeof(char));
     memcpy(substring, original + start, length);
-    return SI_StringValC(substring);
+    substring[length] = '\0';
+    return (SIValue){.stringval = substring, .type = T_STRING};
 }
 
 void _toLower(const char *str, char *lower, size_t *lower_len) {
@@ -499,26 +504,27 @@ SIValue AR_TOLOWER(SIValue *argv, int argc) {
     assert(argc == 1);
 
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
-    char *original = argv[0].stringval.str;
-    size_t lower_len = argv[0].stringval.len + 1;
-    char *lower = calloc(lower_len, sizeof(char));
+    char *original = argv[0].stringval;
+    size_t lower_len = strlen(argv[0].stringval) + 1;
+    char *lower = malloc(lower_len * sizeof(char));
     _toLower(original, lower, &lower_len);
-    return SI_StringValC(lower);
+    lower[lower_len] = '\0';
+    return (SIValue){.stringval = lower, .type = T_STRING};
 }
 
 SIValue AR_TOUPPER(SIValue *argv, int argc) {
     assert(argc == 1);
 
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
-    char *original = argv[0].stringval.str;
-    size_t original_len = argv[0].stringval.len;
-    char *upper = calloc(original_len+1, sizeof(char));
-    
-    for(int i = 0; i < original_len; i++) {
-        upper[i] = toupper(original[i]);
-    }
+    char *original = argv[0].stringval;
+    size_t original_len = strlen(argv[0].stringval);
+    char *upper = malloc((original_len + 1) * sizeof(char));
 
-    return SI_StringValC(upper);
+    for(int i = 0; i < original_len; i++) {
+      upper[i] = toupper(original[i]);
+    }
+    upper[original_len] = '\0';
+    return (SIValue){.stringval = upper, .type = T_STRING};
 }
 
 SIValue AR_TOSTRING(SIValue *argv, int argc) {
@@ -526,9 +532,9 @@ SIValue AR_TOSTRING(SIValue *argv, int argc) {
 
     if(SIValue_IsNull(argv[0])) return SI_NullVal();
     size_t len = 128;
-    char *str = calloc(len, sizeof(char));
+    char *str = malloc(len * sizeof(char));
     SIValue_ToString(argv[0], str, len);
-    return SI_StringValC(str);
+    return (SIValue){.stringval = str, .type = T_STRING};
 }
 
 SIValue AR_TRIM(SIValue *argv, int argc) {

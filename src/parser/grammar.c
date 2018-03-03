@@ -1279,7 +1279,8 @@ static void yy_reduce(
 	yylhsminor.yy114 = NewVector(SIValue*, 2);
 
 	SIValue *key = malloc(sizeof(SIValue));
-	*key = SI_StringValC(strdup(yymsp[-2].minor.yy0.strval));
+	key->stringval = strdup(yymsp[-2].minor.yy0.strval);
+	key->type = T_STRING;
 	Vector_Push(yylhsminor.yy114, key);
 
 	SIValue *val = malloc(sizeof(SIValue));
@@ -1293,7 +1294,8 @@ static void yy_reduce(
 #line 226 "grammar.y"
 {
 	SIValue *key = malloc(sizeof(SIValue));
-	*key = SI_StringValC(strdup(yymsp[-4].minor.yy0.strval));
+	key->stringval = strdup(yymsp[-4].minor.yy0.strval);
+	key->type = T_STRING;
 	Vector_Push(yymsp[0].minor.yy114, key);
 
 	SIValue *val = malloc(sizeof(SIValue));
@@ -1622,7 +1624,11 @@ static void yy_reduce(
         break;
       case 77: /* value ::= STRING */
 #line 438 "grammar.y"
-{  yylhsminor.yy86 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
+
+{
+  char *str = strdup(yymsp[0].minor.yy0.strval);
+  yylhsminor.yy86 =  (SIValue){.stringval = str, .type = T_STRING};
+}
 #line 1627 "grammar.c"
   yymsp[0].minor.yy86 = yylhsminor.yy86;
         break;
