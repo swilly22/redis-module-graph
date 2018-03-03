@@ -46,13 +46,10 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <string.h>
 
 #define zmalloc malloc
 #define zfree free
-
-// The following include is used for alloc overrides in the RedisLabsModules repo,
-// but we will currently stick to the default allocators
-// #include "../rmutil/alloc.h"
 
 static inline unsigned long skiplistLength(skiplist *sl) { return sl->length; }
 
@@ -86,14 +83,26 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
 
 skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
                                       skiplistValCmpFunc cmp) {
-  // prevent insertion of duplicate vals (ids) to the same key
-  for (int i = 0; i < n->numVals; i++) {
-    if (!cmp(n->vals[i], val)) {
-      return NULL;
-    }
+
+  size_t elem_size = sizeof(val);
+  // Maintain secondary sort order between values within a skiplistNode
+  int i = 0;
+  while (i < n->numVals && cmp(val, n->vals[i]) > 0) {
+    i ++;
   }
-  n->vals = realloc(n->vals, ++n->numVals * sizeof(void *));
-  n->vals[n->numVals - 1] = val;
+
+  // TODO We may want to realloc for blocks rather than single elements later
+  n->vals = realloc(n->vals, (n->numVals + 1) * elem_size);
+
+  if (i < n->numVals) {
+    // If not inserting at end of array, move all values from i to end to the right by 1
+    void *insertionPoint = n->vals + i;
+    memmove(insertionPoint + elem_size, insertionPoint, (n->numVals - i) * elem_size);
+  }
+
+  // Insert the new value
+  n->vals[i] = val;
+  n->numVals ++;
 
   return n;
 }

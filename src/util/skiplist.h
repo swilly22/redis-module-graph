@@ -45,8 +45,6 @@ typedef struct skiplistNode {
   } level[];
 } skiplistNode;
 
-// TODO The original skiplist implementations included a context,
-// but I could not discern its purpose
 typedef int (*skiplistCmpFunc)(void *p1, void *p2, void *ctx);
 typedef int (*skiplistValCmpFunc)(void *p1, void *p2);
 
@@ -85,8 +83,4 @@ skiplistIterator skiplistIterateAll(skiplist *sl);
 void *skiplistIterator_Next(skiplistIterator *it);
 void *currentIteratorKey(skiplistIterator *it);
 
-// TODO: I've made these `static inline` currently, can revert
-// anytime if that's not sensible
-// unsigned long skiplistLength(skiplist *sl);
-// skiplistNode *skiplistIteratorCurrent(skiplistIterator *it);
 #endif
