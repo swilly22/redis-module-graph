@@ -26,6 +26,15 @@ static inline double compKey(SIValue *v) {
   }
 }
 
+static void free_skiplist_elements(skiplist *sl) {
+  skiplistIterator iter = skiplistIterateAll(sl);
+  void *val;
+
+  while ((val = skiplistIterator_Next(&iter)) != NULL) {
+    FreeNode(val);
+  }
+}
+
 int compareNodes(void *p1, void *p2) {
   Node *a = (Node *)p1;
   Node *b = (Node *)p2;
@@ -58,6 +67,64 @@ int compareSI(void *p1, void *p2, void *ctx) {
   }
 }
 
+void delete_skiplist_elems(void) {
+  skiplist *node_sl = skiplistCreate(compareSI, NULL, compareNodes);
+  Node *cur_node;
+  SIValue *cur_prop;
+  const char *node_label = "default_label";
+  char *prop_key = "default_prop_key";
+
+  for (long i = 0; words[i] != NULL; i ++) {
+    cur_node = NewNode(10 + i, node_label);
+    cur_prop = malloc(sizeof(SIValue));
+    SIValue_FromString(cur_prop, words[i]);
+    Node_Add_Properties(cur_node, 1, &prop_key, cur_prop);
+    skiplistInsert(node_sl, cur_prop, cur_node);
+
+    cur_node = NewNode(i, node_label);
+    cur_prop = malloc(sizeof(SIValue));
+    SIValue_FromString(cur_prop, words[6 -i]);
+    Node_Add_Properties(cur_node, 1, &prop_key, cur_prop);
+    skiplistInsert(node_sl, cur_prop, cur_node);
+  }
+
+  int delete_result;
+  void *search_result;
+
+  SIValue prop_to_delete;
+  Node *node_to_delete;
+
+  // Attempt to delete a non-existent value
+  SIValue_FromString(&prop_to_delete, words[1]);
+  node_to_delete = NewNode(-100, node_label);
+  delete_result = skiplistDelete(node_sl, &prop_to_delete, node_to_delete);
+  assert(delete_result == 0);
+
+  // Attempt to delete a non-existent skiplist key
+  SIValue_FromString(&prop_to_delete, "not_a_key");
+  delete_result = skiplistDelete(node_sl, &prop_to_delete, NULL);
+  assert(delete_result == 0);
+
+  // Delete a single value from the skiplist
+  SIValue_FromString(&prop_to_delete, words[0]);
+  node_to_delete = NewNode(10, node_label);
+  Node_Add_Properties(cur_node, 1, &prop_key, &prop_to_delete);
+  delete_result = skiplistDelete(node_sl, &prop_to_delete, node_to_delete);
+  assert(delete_result == 1);
+
+  // Delete full nodes from the skiplist - a single key and all values that share it
+  SIValue_FromString(&prop_to_delete, words[3]);
+  delete_result = skiplistDelete(node_sl, &prop_to_delete, NULL);
+  assert(delete_result == 1);
+
+  // Verify that the skiplistNode has been deleted
+  search_result = skiplistFind(node_sl, &prop_to_delete);
+  assert(search_result == NULL);
+
+  free_skiplist_elements(node_sl);
+  skiplistFree(node_sl);
+}
+
 /*
  * This test serves two purposes:
  * Test skiplist compatibility with Redis-Graph's specialized types,
@@ -77,16 +144,14 @@ void test_skiplist_graph(void) {
     // Add nodes with greater IDs
     cur_node = NewNode(10 + i, node_label);
     cur_prop = malloc(sizeof(SIValue));
-    cur_prop->stringval = strdup(words[i]);
-    cur_prop->type = T_STRING;
+    SIValue_FromString(cur_prop, words[i]);
     Node_Add_Properties(cur_node, 1, &prop_key, cur_prop);
     skiplistInsert(node_sl, cur_prop, cur_node);
 
     // Add nodes with lower IDs and different property keys
     cur_node = NewNode(i, node_label);
     cur_prop = malloc(sizeof(SIValue));
-    cur_prop->stringval = strdup(words[6 - i]);
-    cur_prop->type = T_STRING;
+    SIValue_FromString(cur_prop, words[6 - i]);
     Node_Add_Properties(cur_node, 1, &prop_key, cur_prop);
     skiplistInsert(node_sl, cur_prop, cur_node);
   }
@@ -112,10 +177,14 @@ void test_skiplist_graph(void) {
     // printf("indexed property: \"%s\"\n",  cur_node->properties[0].value.stringval);
     // printf("node id: %ld\n", cur_node->id);
   }
+  free_skiplist_elements(node_sl);
+  skiplistFree(node_sl);
 
-  printf("test_skiplist_graph - PASS!\n");
 }
 
 int main(void) {
   test_skiplist_graph();
+  delete_skiplist_elems();
+
+  printf("test_skiplist_graph - PASS!\n");
 }

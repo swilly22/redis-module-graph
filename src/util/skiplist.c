@@ -256,8 +256,11 @@ void skiplistDeleteNode(skiplist *sl, skiplistNode *x, skiplistNode **update) {
 }
 
 /*
- * Delete an element from the skiplist. If the element was found and deleted
- * 1 is returned, otherwise if the element was not there, 0 is returned.
+ * Delete an element from the skiplist. If the `val` argument is provided,
+ * the single matching value will be found and deleted; otherwise, the skiplistNode
+ * representing the key matching `obj` and all of its elements will be deleted.
+ * If the operation is successful, 1 is returned, otherwise the target was not found and 0 is returned.
+ * The memory used to to represent skiplist keys and values is not freed.
  */
 int skiplistDelete(skiplist *sl, void *obj, void *val) {
   skiplistNode *update[SKIPLIST_MAXLEVEL], *x;
@@ -276,17 +279,22 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
 
     if (val) {
       // try to delete the value itself from the vallist
+      int found = 0;
       for (int i = 0; i < x->numVals; i++) {
         // found the value - let's delete it
         if (!sl->valcmp(val, x->vals[i])) {
-
-          // switch the found value with the top value
+          found = 1;
+          // switch the found value with the last value
           if (i < x->numVals - 1) {
             x->vals[i] = x->vals[x->numVals - 1];
           }
           x->numVals--;
           break;
         }
+      }
+      if (!found) {
+        // Specified value was not found in skiplistNode
+        return 0;
       }
     }
 
