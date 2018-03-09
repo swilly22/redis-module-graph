@@ -185,7 +185,7 @@ void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_QueryExpressionN
             exp->operand.type == AST_AR_EXP_VARIADIC &&
             exp->operand.variadic.property == NULL) {
             
-            /* Return cluase doesn't contains entity's lable,
+            /* Return clause doesn't contains entity's label,
              * Find collapsed entity's label. */
             AST_GraphEntity *collapsed_entity = NULL;
             for(int j = 0; j < Vector_Size(ast->matchNode->graphEntities); j++) {
@@ -199,7 +199,7 @@ void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_QueryExpressionN
             
             /* Failed to find collapsed entity. */
             if(collapsed_entity == NULL) {
-                /* Invalud query, return clause refers to none existing entity. */
+                /* Invalid query, return clause refers to non-existent entity. */
                 /* TODO: Validate query. */
                 printf("Error, could not find collapsed entity\n");
                 return;
