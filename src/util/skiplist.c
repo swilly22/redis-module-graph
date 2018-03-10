@@ -284,9 +284,11 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
         // found the value - let's delete it
         if (!sl->valcmp(val, x->vals[i])) {
           found = 1;
-          // switch the found value with the last value
+          // Move all later elements to the left to remove this value while maintaining
+          // sort order between elements
           if (i < x->numVals - 1) {
-            x->vals[i] = x->vals[x->numVals - 1];
+            size_t elem_size = sizeof(val);
+            memmove(x->vals + i * elem_size, x->vals + (i + 1) * elem_size, (x->numVals - i + 1) * elem_size);
           }
           x->numVals--;
           break;
