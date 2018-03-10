@@ -49,7 +49,6 @@ void test_string_sorts(void) {
   }
 
   skiplistFree(string_sl);
-  printf("test_sl_sort - PASS!\n");
 }
 
 // Verify that the skiplist iterator passes over all elements (in order)
@@ -76,11 +75,11 @@ void test_sl_iterator(void) {
   assert (x == NULL);
 
   skiplistFree(string_sl);
-
-  printf("test_sl_iterator - PASS!\n");
 }
 
 int main(void) {
   test_string_sorts();
   test_sl_iterator();
+
+  printf("test_skiplist - PASS!\n");
 }
