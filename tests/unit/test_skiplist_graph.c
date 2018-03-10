@@ -67,6 +67,41 @@ int compareSI(void *p1, void *p2, void *ctx) {
   }
 }
 
+void retrieve_skiplist_range(void) {
+  skiplist *node_sl = skiplistCreate(compareSI, NULL, compareNodes);
+  Node *cur_node;
+  SIValue *cur_prop;
+  const char *node_label = "default_label";
+  char *prop_key = "default_prop_key";
+
+  char *keys[] = {"5.5", "0", "-30.2", "7", "1", "2", "-1.5", NULL};
+
+  // The IDs we will assign to the Node values in the skiplist
+  // (defined as the order the keys should be in after sorting)
+  long ids[] = {5, 2, 0, 6, 3, 4, 1};
+
+  for (long i = 0; keys[i] != NULL; i ++) {
+    cur_node = NewNode(ids[i], node_label);
+    cur_prop = malloc(sizeof(SIValue));
+    SIValue_FromString(cur_prop, keys[i]);
+    Node_Add_Properties(cur_node, 1, &prop_key, cur_prop);
+    skiplistInsert(node_sl, cur_prop, cur_node);
+  }
+
+  long last_id = 3;
+  skiplistIterator iter;
+  // Iterate over a range of keys [1, INF)
+  SIValue min = {.doubleval = 1, .type = T_DOUBLE};
+  iter = skiplistIterateRange(node_sl, &min, NULL, 1, 0);
+  while ((cur_node = skiplistIterator_Next(&iter)) != NULL) {
+    assert(last_id + 1 == cur_node->id); 
+    last_id = cur_node->id;
+  }
+
+  free_skiplist_elements(node_sl);
+  skiplistFree(node_sl);
+}
+
 void delete_skiplist_elems(void) {
   skiplist *node_sl = skiplistCreate(compareSI, NULL, compareNodes);
   Node *cur_node;
@@ -185,6 +220,7 @@ void test_skiplist_graph(void) {
 int main(void) {
   test_skiplist_graph();
   delete_skiplist_elems();
+  retrieve_skiplist_range();
 
   printf("test_skiplist_graph - PASS!\n");
 }

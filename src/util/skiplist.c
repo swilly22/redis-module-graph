@@ -386,7 +386,13 @@ void *skiplistPopTail(skiplist *sl) {
 
 skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
                                       int minExclusive, int maxExclusive) {
-  skiplistNode *n = skiplistFindAtLeast(sl, min, minExclusive);
+  skiplistNode *n;
+  if (!min) {
+    // Range begins with the first skiplist element if min is NULL
+    n = sl->header->level[0].forward;
+  } else {
+    n = skiplistFindAtLeast(sl, min, minExclusive);
+  }
   if (n && max) {
     // make sure the first item of the range is not already above the range end
     int c = sl->compare(n->obj, max, sl->cmpCtx);

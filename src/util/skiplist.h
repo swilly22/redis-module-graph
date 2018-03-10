@@ -63,6 +63,7 @@ void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val);
 int skiplistDelete(skiplist *sl, void *obj, void *val);
 void *skiplistFind(skiplist *sl, void *obj);
+void *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive);
 void *skiplistPopHead(skiplist *sl);
 void *skiplistPopTail(skiplist *sl);
 
