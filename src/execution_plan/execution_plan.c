@@ -210,7 +210,7 @@ void _ExecutionPlan_OptimizeEntryPoints(RedisModuleCtx *ctx, Graph *g, const cha
         
         OpBase *scan_op = NULL;
         if((*entry_point)->label) {
-            /* TODO: when indexing is enabled, use index when possible. */ // indeed!
+            /* TODO: when indexing is enabled, use index when possible. */
             scan_op = NewNodeByLabelScanOp(ctx, g, entry_point, graph_name, (*entry_point)->label);
         } else {
             /* Node is not labeled, no other option but a full scan. */
@@ -381,11 +381,6 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
              * this is an hanging node "()", create a scan operation. */
             OpNode *scan_op;
             if(node->label) {
-              /*
-                 if (labelIsIndexed(node->label)) {
-                 scan_op = NewOpNode(NewNodeByIndexScanOp(...);
-                 } else {
-               */
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
             } else {
@@ -417,30 +412,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
     Vector_Free(Ops);
 
     /* Set root operation */
-    /*
-     * TODO Temporary hack solution!
-     * A matchNode sets up a graph as we would like to traverse it for building indexes
-     * (with the possible exception that we can only index nodes with the appropriate properties,
-     *  while I think we can only specify node properties in queries at the moment)
-     */
-    if (ast->matchNode) {
-      AST_GraphEntity *entity;
-      Vector_Get(ast->matchNode->graphEntities, 0, &entity);
-      if (!strcmp(entity->alias, "dummy_alias")) {
-        AST_Variable *dummy_property;
-        Vector_Get(entity->properties, 0, &dummy_property);
-        execution_plan->root->operation = NewBuildIndexOp(ctx, graph, graph_name, entity->label, dummy_property->alias);
-        // Hack continues
-        Free_AST_WhereNode(ast->whereNode);
-        ast->whereNode = NULL;
-        Free_AST_MatchNode(ast->matchNode);
-        ast->matchNode = NULL;
-        Free_AST_ReturnNode(ast->returnNode);
-        ast->returnNode = NULL;
-      }
-    }
 
-    // delete, set, and create will require corresponding updates to relevant indices, if any.
     if(ast->deleteNode) {
         execution_plan->root->operation = NewDeleteOp(ctx, ast->deleteNode, graph,
                                                       graph_name, execution_plan->result_set);
@@ -483,8 +455,6 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
         _ExecutionPlan_MergeNodes(execution_plan, nodeToMerge);
     }
 
-    // Building filters on indexed properties (with numeric comparisons)
-    // will, I think, be a significantly different process - revisit soon
     if(ast->whereNode != NULL) {
         execution_plan->filter_tree = BuildFiltersTree(ast->whereNode->filters);
         _ExecutionPlan_AddFilters(execution_plan->root, &execution_plan->filter_tree);

@@ -12,6 +12,5 @@
 #include "op_node_by_label_scan.h"
 #include "op_produce_results.h"
 #include "op_update.h"
-#include "op_build_index.h"
 
 #endif

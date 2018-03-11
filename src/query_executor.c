@@ -347,8 +347,6 @@ int Query_Modifies_KeySpace(const AST_QueryExpressionNode *ast) {
 }
 
 AST_QueryExpressionNode* ParseQuery(const char *query, size_t qLen, char **errMsg) {
-    // I initially suspect that this region would be the appropriate place
-    // to apply explicit index hints
     AST_QueryExpressionNode *ast = Query_Parse(query, qLen, errMsg);
     
     if (!ast) {
