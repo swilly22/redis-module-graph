@@ -24,7 +24,7 @@ SIValue SI_DoubleVal(double d) {
 }
 
 SIValue SI_StringVal(char *s) {
-  return (SIValue){.stringval = (char *)s, .type = T_STRING};
+  return (SIValue){.stringval = strdup(s), .type = T_STRING};
 }
 
 SIValue SI_BoolVal(int b) { 
@@ -188,7 +188,7 @@ int SIValue_ToString(SIValue v, char *buf, size_t len) {
   switch (v.type) {
   case T_STRING:
     // bytes_written = snprintf(buf, len, "\"%.*s\"", (int)v.stringval.len, v.stringval.str);
-    strcpy(buf, v.stringval);
+    strncpy(buf, v.stringval, len);
     bytes_written = strlen(buf);
     break;
   case T_INT32:

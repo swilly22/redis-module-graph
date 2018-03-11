@@ -406,9 +406,7 @@ SIValue AR_RIGHT(SIValue *argv, int argc) {
       // No need to truncate this string based on the requested length
       right_str = strdup(argv[0].stringval);
     } else {
-      right_str = malloc((newlen + 1) * sizeof(char));
-      memcpy(right_str, argv[0].stringval + start, newlen * sizeof(char));
-      right_str[newlen] = '\0';
+      right_str = strdup(argv[0].stringval + start);
     }
 
     return (SIValue){.stringval = right_str, .type = T_STRING};
