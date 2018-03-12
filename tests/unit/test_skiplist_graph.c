@@ -130,14 +130,13 @@ void test_skiplist_range(void) {
 
 void test_skiplist_delete(void) {
   int delete_result;
-  void *search_result;
   SIValue prop_to_delete;
-  Node *node_to_delete;
 
+  // TODO this line gets repeated after the following one without debug?
   skiplist *sl = build_skiplist();
 
   skiplistNode *old_skiplist_node = skiplistFind(sl, words[2]);
-  node_to_delete = old_skiplist_node->vals[0];
+  Node *node_to_delete = old_skiplist_node->vals[0];
   SIValue_FromString(&prop_to_delete, words[3]);
 
   // Attempt to delete a non-existent key-value pair
@@ -159,7 +158,7 @@ void test_skiplist_delete(void) {
   assert(delete_result == 1);
 
   // Verify that the skiplistNode has been deleted
-  search_result = skiplistFind(sl, &prop_to_delete);
+  void *search_result = skiplistFind(sl, &prop_to_delete);
   assert(search_result == NULL);
 
   skiplistFree(sl);

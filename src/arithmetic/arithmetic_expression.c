@@ -408,7 +408,7 @@ SIValue AR_RIGHT(SIValue *argv, int argc) {
       right_str = strdup(argv[0].stringval + start);
     }
 
-    return (SIValue){.stringval = right_str, .type = T_STRING};
+    return SI_StringVal(right_str);
 }
 
 SIValue AR_RTRIM(SIValue *argv, int argc) {
