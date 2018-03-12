@@ -2,6 +2,7 @@
 #define __SECONDARY_VALUE_H__
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "./rmutil/vector.h"
 
 typedef char *SIId;
@@ -98,8 +99,6 @@ void SIValue_FromString(SIValue *v, char *s);
 /* Concats strings as a comma seperated string. */
 size_t SIValue_StringConcat(SIValue* strings, unsigned int string_count, char** concat);
 
-// Only being used for debug purposes
-#include <stdio.h>
-void agnosticPrintSIVal(FILE *outstream, SIValue *v);
+void SIValue_Print(FILE *outstream, SIValue *v);
 
 #endif

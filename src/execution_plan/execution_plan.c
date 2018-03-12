@@ -381,6 +381,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
              * this is an hanging node "()", create a scan operation. */
             OpNode *scan_op;
             if(node->label) {
+                /* TODO: when indexing is enabled, use index when possible. */
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
             } else {

@@ -117,12 +117,12 @@ int _parseInt(SIValue *v, char *str) {
 int _parseBool(SIValue *v, char *str) {
   int len = strlen(str);
   if ((len == 1 && !strcmp("1", str)) ||
-      (len == 4 && !strcmp("true", str))) {
+      (len == 4 && !strcasecmp("true", str))) {
     v->boolval = 1;
     return 1;
   }
 
-  if ((len == 1 && !strcasecmp("0", str)) ||
+  if ((len == 1 && !strcmp("0", str)) ||
       (len == 5 && !strcasecmp("false", str))) {
     v->boolval = 0;
     return 1;
@@ -187,7 +187,6 @@ int SIValue_ToString(SIValue v, char *buf, size_t len) {
 
   switch (v.type) {
   case T_STRING:
-    // bytes_written = snprintf(buf, len, "\"%.*s\"", (int)v.stringval.len, v.stringval.str);
     strncpy(buf, v.stringval, len);
     bytes_written = strlen(buf);
     break;
@@ -408,7 +407,7 @@ size_t SIValue_StringConcat(SIValue* strings, unsigned int string_count, char** 
   return offset;
 }
 
-void agnosticPrintSIVal(FILE *outstream, SIValue *v) {
+void SIValue_Print(FILE *outstream, SIValue *v) {
   switch (v->type) {
     case T_STRING:
       fprintf(outstream, "%s", v->stringval);
