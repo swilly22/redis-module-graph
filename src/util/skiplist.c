@@ -72,10 +72,11 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
   if (val) {
     zn->vals = zmalloc(sizeof(void *));
     zn->vals[0] = val;
-    zn->numVals = 1;
+    zn->numVals = zn->liveVals = 1;
+    zn->tombstone = calloc(1, sizeof(char));
   } else {
     zn->vals = NULL;
-    zn->numVals = 0;
+    zn->numVals = zn->liveVals = 0;
   }
 
   return zn;
@@ -84,7 +85,6 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
 skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
                                       skiplistValCmpFunc cmp) {
 
-  size_t elem_size = sizeof(val);
   // Maintain secondary sort order between values within a skiplistNode
   int i = 0;
   while (i < n->numVals && cmp(val, n->vals[i]) > 0) {
@@ -92,17 +92,22 @@ skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
   }
 
   // TODO We may want to realloc for blocks rather than single elements later
-  n->vals = realloc(n->vals, (n->numVals + 1) * elem_size);
+  n->vals = realloc(n->vals, (n->numVals + 1) * sizeof(void *));
+  n->tombstone= realloc(n->tombstone, (n->numVals + 1) * sizeof(char));
 
   if (i < n->numVals) {
     // If not inserting at end of array, move all values from i to end to the right by 1
-    void *insertionPoint = n->vals + i;
-    memmove(insertionPoint + elem_size, insertionPoint, (n->numVals - i) * elem_size);
+    memmove(n->vals + (i + 1), n->vals + i, (n->numVals - i) * sizeof(void *));
+
+    // TODO This seems like a really wasteful step - better solutions?
+    memmove(n->tombstone + i + 1, n->tombstone + i, (n->numVals - i) * sizeof(char));
   }
 
   // Insert the new value
   n->vals[i] = val;
+  n->tombstone[i] = 0;
   n->numVals ++;
+  n->liveVals ++;
 
   return n;
 }
@@ -112,7 +117,7 @@ skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
  * compare elements. The function return value is the same as strcmp().
  */
 skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
-                         skiplistValCmpFunc vcmp) {
+                         skiplistValCmpFunc vcmp, skiplistFreeObjFunc freeObj) {
   int j;
   skiplist *sl = zmalloc(sizeof(struct skiplist));
   sl->level = 1;
@@ -122,12 +127,13 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
     sl->header->level[j].forward = NULL;
     sl->header->level[j].span = 0;
   }
-  sl->header->numVals = 0;
+  sl->header->numVals = sl->header->liveVals = 0;
   sl->header->backward = NULL;
   sl->tail = NULL;
   sl->compare = cmp;
   sl->cmpCtx = cmpCtx;
   sl->valcmp = vcmp;
+  sl->freeObj = freeObj;
 
   return sl;
 }
@@ -235,6 +241,9 @@ skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val) {
  * all the references of the node we are going to remove.
  */
 void skiplistDeleteNode(skiplist *sl, skiplistNode *x, skiplistNode **update) {
+  // Free the node key if we specified a routine for it
+  if (sl->freeObj) sl->freeObj(x->obj);
+
   int i;
   for (i = 0; i < sl->level; i++) {
     if (update[i]->level[i].forward == x) {
@@ -282,15 +291,10 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
       int found = 0;
       for (int i = 0; i < x->numVals; i++) {
         // found the value - let's delete it
-        if (!sl->valcmp(val, x->vals[i])) {
+        if (!x->tombstone[i] && !sl->valcmp(val, x->vals[i])) {
           found = 1;
-          // Move all later elements to the left to remove this value while maintaining
-          // sort order between elements
-          if (i < x->numVals - 1) {
-            size_t elem_size = sizeof(val);
-            memmove(x->vals + i * elem_size, x->vals + (i + 1) * elem_size, (x->numVals - i + 1) * elem_size);
-          }
-          x->numVals--;
+          x->tombstone[i] = 1;
+          x->liveVals --;
           break;
         }
       }
@@ -300,13 +304,29 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
       }
     }
 
-    if (!val || x->numVals == 0) {
+    if (!val || x->liveVals == 0) {
       skiplistDeleteNode(sl, x, update);
       skiplistFreeNode(x);
     }
     return 1;
   }
   return 0; /* not found */
+}
+
+/*
+ * Values within a skiplistNode are sorted, so we *should* be able to access them
+ * with a binary search, but I'm having trouble with finding elements in the sl_node->vals
+ * array with pointer arithmetic?
+ */
+void *searchSkiplistNode(skiplistNode *sl_node, void *value, int elem_size, skiplistValCmpFunc valcmp) {
+  // bsearch(value, sl_node->vals[0], sl_node->numVals, elem_size, valcmp);
+  for (int i = 0; i < sl_node->numVals; i ++) {
+    if (sl_node->tombstone[i]) continue;
+    if(!valcmp(value, sl_node->vals[i])) {
+      return sl_node->vals[i];
+    }
+  }
+  return NULL;
 }
 
 /*
@@ -432,6 +452,12 @@ void *skiplistIterator_Next(skiplistIterator *it) {
   if (!it->current) {
     return NULL;
   }
+
+  // Skip tombstoned values
+  while (it->currentValOffset < it->current->numVals && it->current->tombstone[it->currentValOffset]) {
+    it->currentValOffset ++;
+  }
+
   void *ret = NULL;
   if (it->currentValOffset < it->current->numVals) {
     ret = it->current->vals[it->currentValOffset++];

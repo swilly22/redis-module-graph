@@ -28,6 +28,17 @@ SIValue* GraphEntity_Get_Property(const GraphEntity *e, const char* key) {
 	return PROPERTY_NOTFOUND;
 }
 
+void GraphEntity_Update_Property(GraphEntity *e, const char *key, SIValue *value) {
+  int i;
+  for(i = 0; i < e->prop_count; i++) {
+    if(!strcmp(key, e->properties[i].name)) {
+      break;
+    }
+  }
+  // SIValue_Free(&e->properties[i].value);
+  e->properties[i].value = SI_Clone(*value);
+}
+
 void FreeGraphEntity(GraphEntity *e) {
 	if(e->properties == NULL) {
 		for(int i = 0; i < e->prop_count; i++) {

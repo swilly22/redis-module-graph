@@ -20,7 +20,7 @@ int cmpDoubleKeys(void *p1, void *p2, void *ctx) {
 }
 
 // Numeric value comparator
-int cmpDoubleVals(void *p1, void *p2) {
+int cmpDoubleVals(const void *p1, const void *p2) {
   int a = *(double *)p1;
   int b = *(double *)p2;
 
@@ -39,7 +39,7 @@ int cmpStrKeys(void *a, void *b, void *ctx) {
 }
 
 // String value comparator
-int cmpStrVals(void *a, void *b) {
+int cmpStrVals(const void *a, const void *b) {
   return strcmp(a, b);
 }
 
@@ -52,7 +52,7 @@ void test_string_sorts(void) {
   char *vals[] = {"foo val", "bar val", "zap val", "pomo val",
                   "pera val", "arancio val", "limone val", NULL};
 
-  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpStrVals);
+  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpStrVals, NULL);
 
   for (int i = 0; words[i] != NULL; i ++) {
     skiplistInsert(string_sl, words[i], vals[i]);
@@ -77,7 +77,7 @@ void test_numeric_sorts(void) {
   // vals are defined as the order the keys should be in after sorting
   double vals[] = {5, 2, 0, 6, 3, 4, 1};
 
-  skiplist *numeric_sl = skiplistCreate(cmpDoubleKeys, NULL, cmpDoubleVals);
+  skiplist *numeric_sl = skiplistCreate(cmpDoubleKeys, NULL, cmpDoubleVals, NULL);
 
   for (int i = 0; i < 7; i ++) {
     skiplistInsert(numeric_sl, keys + i, vals + i);
@@ -153,7 +153,7 @@ void test_numeric_sorts(void) {
 }
 // Verify that the skiplist iterator passes over all elements (in order)
 void test_sl_iterator(void) {
-  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals);
+  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL);
   skiplistNode *x;
   double first = 1, second = 2, third = 3;
   skiplistInsert(string_sl, "c_third", &third);

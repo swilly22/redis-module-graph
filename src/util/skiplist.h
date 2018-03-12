@@ -37,7 +37,9 @@
 typedef struct skiplistNode {
   void *obj;
   void **vals;
+  char *tombstone;
   unsigned int numVals;
+  unsigned int liveVals;
   struct skiplistNode *backward;
   struct skiplistLevel {
     struct skiplistNode *forward;
@@ -46,22 +48,25 @@ typedef struct skiplistNode {
 } skiplistNode;
 
 typedef int (*skiplistCmpFunc)(void *p1, void *p2, void *ctx);
-typedef int (*skiplistValCmpFunc)(void *p1, void *p2);
+typedef int (*skiplistValCmpFunc)(const void *p1, const void *p2);
+typedef void (*skiplistFreeObjFunc)(void *p1);
 
 typedef struct skiplist {
   struct skiplistNode *header, *tail;
   skiplistCmpFunc compare;
   skiplistValCmpFunc valcmp;
+  skiplistFreeObjFunc freeObj;
 
   void *cmpCtx;
   unsigned long length;
   int level;
 } skiplist;
 
-skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc vcmp);
+skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc vcmp, skiplistFreeObjFunc freeObj);
 void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val);
 int skiplistDelete(skiplist *sl, void *obj, void *val);
+void *searchSkiplistNode(skiplistNode *sl_node, void *value, int elem_size, skiplistValCmpFunc valcmp);
 void *skiplistFind(skiplist *sl, void *obj);
 void *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive);
 void *skiplistPopHead(skiplist *sl);
