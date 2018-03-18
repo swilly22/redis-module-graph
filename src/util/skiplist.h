@@ -37,9 +37,7 @@
 typedef struct skiplistNode {
   void *obj;
   void **vals;
-  char *tombstone;
   unsigned int numVals;
-  unsigned int liveVals;
   struct skiplistNode *backward;
   struct skiplistLevel {
     struct skiplistNode *forward;
@@ -66,7 +64,7 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc v
 void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val);
 int skiplistDelete(skiplist *sl, void *obj, void *val);
-void *searchSkiplistNode(skiplistNode *sl_node, void *value, int elem_size, skiplistValCmpFunc valcmp);
+void *searchSkiplistNode(skiplistNode *sl_node, void *value, skiplistValCmpFunc valcmp);
 void *skiplistFind(skiplist *sl, void *obj);
 void *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive);
 void *skiplistPopHead(skiplist *sl);
@@ -87,6 +85,5 @@ skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
 
 skiplistIterator skiplistIterateAll(skiplist *sl);
 void *skiplistIterator_Next(skiplistIterator *it);
-void *currentIteratorKey(skiplistIterator *it);
 
 #endif

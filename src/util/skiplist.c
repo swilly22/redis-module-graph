@@ -72,11 +72,10 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
   if (val) {
     zn->vals = zmalloc(sizeof(void *));
     zn->vals[0] = val;
-    zn->numVals = zn->liveVals = 1;
-    zn->tombstone = calloc(1, sizeof(char));
+    zn->numVals = 1;
   } else {
     zn->vals = NULL;
-    zn->numVals = zn->liveVals = 0;
+    zn->numVals = 0;
   }
 
   return zn;
@@ -85,29 +84,12 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
 skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
                                       skiplistValCmpFunc cmp) {
 
-  // Maintain secondary sort order between values within a skiplistNode
-  int i = 0;
-  while (i < n->numVals && cmp(val, n->vals[i]) > 0) {
-    i ++;
-  }
-
   // TODO We may want to realloc for blocks rather than single elements later
   n->vals = realloc(n->vals, (n->numVals + 1) * sizeof(void *));
-  n->tombstone= realloc(n->tombstone, (n->numVals + 1) * sizeof(char));
-
-  if (i < n->numVals) {
-    // If not inserting at end of array, move all values from i to end to the right by 1
-    memmove(n->vals + (i + 1), n->vals + i, (n->numVals - i) * sizeof(void *));
-
-    // TODO This seems like a really wasteful step - better solutions?
-    memmove(n->tombstone + i + 1, n->tombstone + i, (n->numVals - i) * sizeof(char));
-  }
 
   // Insert the new value
-  n->vals[i] = val;
-  n->tombstone[i] = 0;
+  n->vals[n->numVals] = val;
   n->numVals ++;
-  n->liveVals ++;
 
   return n;
 }
@@ -127,7 +109,7 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
     sl->header->level[j].forward = NULL;
     sl->header->level[j].span = 0;
   }
-  sl->header->numVals = sl->header->liveVals = 0;
+  sl->header->numVals = 0;
   sl->header->backward = NULL;
   sl->tail = NULL;
   sl->compare = cmp;
@@ -289,12 +271,15 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
     if (val) {
       // try to delete the value itself from the vallist
       int found = 0;
-      for (int i = 0; i < x->numVals; i++) {
+      for (i = 0; i < x->numVals; i++) {
         // found the value - let's delete it
-        if (!x->tombstone[i] && !sl->valcmp(val, x->vals[i])) {
+        if (!sl->valcmp(val, x->vals[i])) {
           found = 1;
-          x->tombstone[i] = 1;
-          x->liveVals --;
+          // switch the found value with the top value
+          if (i < x->numVals - 1) {
+            x->vals[i] = x->vals[x->numVals - 1];
+          }
+          x->numVals--;
           break;
         }
       }
@@ -304,7 +289,7 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
       }
     }
 
-    if (!val || x->liveVals == 0) {
+    if (!val || x->numVals == 0) {
       skiplistDeleteNode(sl, x, update);
       skiplistFreeNode(x);
     }
@@ -314,14 +299,10 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
 }
 
 /*
- * Values within a skiplistNode are sorted, so we *should* be able to access them
- * with a binary search, but I'm having trouble with finding elements in the sl_node->vals
- * array with pointer arithmetic?
+ * Search for a specific element among values associated to a single skiplist key
  */
-void *searchSkiplistNode(skiplistNode *sl_node, void *value, int elem_size, skiplistValCmpFunc valcmp) {
-  // bsearch(value, sl_node->vals[0], sl_node->numVals, elem_size, valcmp);
+void *searchSkiplistNode(skiplistNode *sl_node, void *value, skiplistValCmpFunc valcmp) {
   for (int i = 0; i < sl_node->numVals; i ++) {
-    if (sl_node->tombstone[i]) continue;
     if(!valcmp(value, sl_node->vals[i])) {
       return sl_node->vals[i];
     }
@@ -431,13 +412,6 @@ skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
 }
 
 skiplistIterator skiplistIterateAll(skiplist *sl) {
-  /*
-   * TODO:
-   * current was formerly being set to sl->header, which seemed to
-   * never have values, making the iterator always return NULL.
-   * It now uses the same logic as PopHead, which seems logical,
-   * but it would be best to verify this
-   */
   return (skiplistIterator){.current = sl->header->level[0].forward,
                             .rangeMin = NULL,
                             .minExclusive = 0,
@@ -451,11 +425,6 @@ void *skiplistIterator_Next(skiplistIterator *it) {
 
   if (!it->current) {
     return NULL;
-  }
-
-  // Skip tombstoned values
-  while (it->currentValOffset < it->current->numVals && it->current->tombstone[it->currentValOffset]) {
-    it->currentValOffset ++;
   }
 
   void *ret = NULL;
@@ -478,15 +447,3 @@ void *skiplistIterator_Next(skiplistIterator *it) {
   return ret;
 }
 
-/*
- * Debug purposes - the standard skiplist iterator
- * (quite sensibly) moves us past the current key
- * when there are no more values on the present node,
- * but for testing it's nice to be able to associate the two
- */
-void *currentIteratorKey(skiplistIterator *it) {
-  if (!it->current) {
-    return NULL;
-  }
-  return it->current->obj;
-}

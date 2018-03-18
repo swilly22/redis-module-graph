@@ -132,10 +132,10 @@ void test_skiplist_delete(void) {
   int delete_result;
   SIValue prop_to_delete;
 
-  // TODO this line gets repeated after the following one without debug?
   skiplist *sl = build_skiplist();
 
-  skiplistNode *old_skiplist_node = skiplistFind(sl, words[2]);
+  SIValue_FromString(&prop_to_delete, words[2]);
+  skiplistNode *old_skiplist_node = skiplistFind(sl, &prop_to_delete);
   Node *node_to_delete = old_skiplist_node->vals[0];
   SIValue_FromString(&prop_to_delete, words[3]);
 
@@ -167,7 +167,9 @@ void test_skiplist_delete(void) {
 void test_skiplist_update(void) {
   void *search_result;
   skiplist *sl = build_skiplist();
-  skiplistNode *old_skiplist_node = skiplistFind(sl, words[2]);
+  SIValue find_prop;
+  SIValue_FromString(&find_prop, words[2]);
+  skiplistNode *old_skiplist_node = skiplistFind(sl, &find_prop);
   Node *node_to_update = old_skiplist_node->vals[0];
 
   SIValue *new_prop = malloc(sizeof(SIValue));
@@ -185,13 +187,13 @@ void test_skiplist_update(void) {
   search_result = skiplistFind(sl, &old_prop);
   void *ret;
   if (search_result) {
-    ret = searchSkiplistNode(search_result, node_to_update, sizeof(void *), sl->valcmp);
+    ret = searchSkiplistNode(search_result, node_to_update, sl->valcmp);
     assert(ret == NULL);
   }
 
   // The new key-value pair can be found
   search_result = skiplistFind(sl, new_prop);
-  ret = searchSkiplistNode(search_result, node_to_update, sizeof(void *), sl->valcmp);
+  ret = searchSkiplistNode(search_result, node_to_update, sl->valcmp);
   assert(ret != NULL);
 
   skiplistFree(sl);
