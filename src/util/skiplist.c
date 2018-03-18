@@ -69,12 +69,13 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
  */
   skiplistNode *zn = zmalloc(sizeof(*zn) + level * sizeof(struct skiplistLevel));
   zn->obj = obj;
+  zn->vals = zmalloc(sizeof(void **));
+  zn->valsAllocated = 1;
   if (val) {
-    zn->vals = zmalloc(sizeof(void *));
     zn->vals[0] = val;
     zn->numVals = 1;
   } else {
-    zn->vals = NULL;
+    zn->vals[0] = NULL;
     zn->numVals = 0;
   }
 
@@ -84,12 +85,13 @@ skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
 skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
                                       skiplistValCmpFunc cmp) {
 
-  // TODO We may want to realloc for blocks rather than single elements later
-  n->vals = realloc(n->vals, (n->numVals + 1) * sizeof(void *));
+  if (n->numVals >= n->valsAllocated) {
+    n->valsAllocated *= 2;
+    n->vals = realloc(n->vals, n->valsAllocated * sizeof(void *));
+  }
 
   // Insert the new value
-  n->vals[n->numVals] = val;
-  n->numVals ++;
+  n->vals[n->numVals ++] = val;
 
   return n;
 }

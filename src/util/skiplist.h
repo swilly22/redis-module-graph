@@ -38,6 +38,7 @@ typedef struct skiplistNode {
   void *obj;
   void **vals;
   unsigned int numVals;
+  unsigned int valsAllocated;
   struct skiplistNode *backward;
   struct skiplistLevel {
     struct skiplistNode *forward;
