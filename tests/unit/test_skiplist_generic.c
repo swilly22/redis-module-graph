@@ -43,6 +43,30 @@ int cmpStrVals(const void *a, const void *b) {
   return strcmp(a, b);
 }
 
+void test_vals_allocation(void) {
+  skiplist *sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL);
+  double val_array[100];
+  int i;
+  for (i = 0; i < 100; i ++) {
+    val_array[i] = (double) i;
+    skiplistInsert(sl, "a", val_array + i);
+  }
+  skiplistNode *node = skiplistFind(sl, "a");
+
+  // The values array initially increases by powers of 2
+  assert(node->valsAllocated == 128);
+
+  for (i = 0; i <= 100; i ++) {
+    if (i % 10) skiplistDelete(sl, "a", val_array + i);
+  }
+
+  // The array shrinks to numVals when a delete causes
+  // numVals to be <= valsAllocated / 4 ( 128 / 4 == 32)
+  assert(node->valsAllocated == 32);
+  // We are deleting 90 of the initial 100 values
+  assert(node->numVals == 10);
+}
+
 // Verify lexicographic sorting of string keys
 void test_string_sorts(void) {
 
@@ -151,6 +175,7 @@ void test_numeric_sorts(void) {
 
   skiplistFree(numeric_sl);
 }
+
 // Verify that the skiplist iterator passes over all elements (in order)
 void test_sl_iterator(void) {
   skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL);
@@ -181,6 +206,7 @@ int main(void) {
   test_string_sorts();
   test_sl_iterator();
   test_numeric_sorts();
+  test_vals_allocation();
 
   printf("test_skiplist - PASS!\n");
 }
