@@ -128,8 +128,12 @@ void test_numeric_sorts(void) {
   assert (*(double*)ret->vals[0] == vals[5]);
 
   int delete_result;
-  // Attempt to delete a non-existent value
+  // Attempt to delete from a key that does not exist
   delete_result = skiplistDelete(numeric_sl, &num1, &num1);
+  assert(delete_result == 0);
+
+  // Attempt to delete a non-existent value from a real key
+  delete_result = skiplistDelete(numeric_sl, &keys[0], &num1);
   assert(delete_result == 0);
 
   // Attempt to delete a non-existent skiplist key
@@ -172,6 +176,12 @@ void test_numeric_sorts(void) {
   assert(delete_result == 1);
   ret = skiplistFind(numeric_sl, keys + 3);
   assert (ret == NULL);
+
+  // Verify that the delete operation removes nodes from the skiplist
+  iter = skiplistIterateAll(numeric_sl);
+  while ((retval = skiplistIterator_Next(&iter)) != NULL) {
+    assert(*(double *)retval != keys[3]);
+  }
 
   skiplistFree(numeric_sl);
 }

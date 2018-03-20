@@ -65,9 +65,8 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc v
 void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val);
 int skiplistDelete(skiplist *sl, void *obj, void *val);
-void *searchSkiplistNode(skiplistNode *sl_node, void *value, skiplistValCmpFunc valcmp);
-void *skiplistFind(skiplist *sl, void *obj);
-void *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive);
+skiplistNode *skiplistFind(skiplist *sl, void *obj);
+skiplistNode *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive);
 void *skiplistPopHead(skiplist *sl);
 void *skiplistPopTail(skiplist *sl);
 

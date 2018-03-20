@@ -58,7 +58,7 @@ void SIValue_Free(SIValue *v);
 void SIValueVector_Append(SIValueVector *v, SIValue val);
 void SIValueVector_Free(SIValueVector *v);
 
-SIValue SI_StringVal(char *s);
+SIValue SI_StringVal(const char *s);
 SIValue SI_IntVal(int i);
 SIValue SI_LongVal(int64_t i);
 SIValue SI_UintVal(u_int64_t i);

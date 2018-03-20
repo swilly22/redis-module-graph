@@ -124,7 +124,7 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
 
 /* Free a skiplist node. We don't free the node's pointed object. */
 void skiplistFreeNode(skiplistNode *node) {
-  if (node->vals) free(node->vals);
+  if (node->vals) zfree(node->vals);
   zfree(node);
 }
 
@@ -151,9 +151,8 @@ int skiplistRandomLevel(void) {
   int level = 1;
   while ((random() & 0xFFFF) < (SKIPLIST_P * 0xFFFF)) {
     level += 1;
-    if (level >= SKIPLIST_MAXLEVEL) break;
   }
-  return level;
+  return (level < SKIPLIST_MAXLEVEL) ? level : SKIPLIST_MAXLEVEL;
 }
 
 /*
@@ -253,7 +252,7 @@ void skiplistDeleteNode(skiplist *sl, skiplistNode *x, skiplistNode **update) {
  * the single matching value will be found and deleted; otherwise, the skiplistNode
  * representing the key matching `obj` and all of its elements will be deleted.
  * If the operation is successful, 1 is returned, otherwise the target was not found and 0 is returned.
- * The memory used to to represent skiplist keys and values is not freed.
+ * The memory used to represent skiplist keys and values is not freed.
  */
 int skiplistDelete(skiplist *sl, void *obj, void *val) {
   skiplistNode *update[SKIPLIST_MAXLEVEL], *x;
@@ -308,22 +307,10 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
 }
 
 /*
- * Search for a specific element among values associated to a single skiplist key
- */
-void *searchSkiplistNode(skiplistNode *sl_node, void *value, skiplistValCmpFunc valcmp) {
-  for (int i = 0; i < sl_node->numVals; i ++) {
-    if(!valcmp(value, sl_node->vals[i])) {
-      return sl_node->vals[i];
-    }
-  }
-  return NULL;
-}
-
-/*
  * Search for the element in the skip list, if found the
  * node pointer is returned, otherwise NULL is returned.
  */
-void *skiplistFind(skiplist *sl, void *obj) {
+skiplistNode* skiplistFind(skiplist *sl, void *obj) {
   skiplistNode *x;
   int i;
 
@@ -346,7 +333,7 @@ void *skiplistFind(skiplist *sl, void *obj) {
  * Search for the element in the skip list, if found the
  * node pointer is returned, otherwise the next pointer is returned.
  */
-void *skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive) {
+skiplistNode* skiplistFindAtLeast(skiplist *sl, void *obj, int exclusive) {
   skiplistNode *x = sl->header;
   int i;
 

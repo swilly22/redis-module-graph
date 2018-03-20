@@ -21,7 +21,7 @@ typedef struct {
  * internall by the NewVector macro */
 Vector *__newVectorSize(size_t elemSize, size_t cap);
 
-// Put a pointer in the vector. To be used internall by the library
+// Put a pointer in the vector. To be used internally by the library
 int __vector_PutPtr(Vector *v, size_t pos, void *elem);
 
 /*
@@ -69,8 +69,6 @@ int Vector_Cap(Vector *v);
 /* free the vector and the underlying data. Does not release its elements if
  * they are pointers*/
 void Vector_Free(Vector *v);
-
-int __vecotr_PutPtr(Vector *v, size_t pos, void *elem);
 
 void* vector_val(Vector *v, size_t pos);
 

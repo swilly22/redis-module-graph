@@ -15,7 +15,7 @@ static inline double compKey(SIValue *v) {
   switch (v->type) {
     case T_DOUBLE:
       return v->doubleval;
-    case T_INT64: // do nothing!
+    case T_INT64:
       return (double)v->longval;
     case T_INT32:
       return (double)v->intval;
@@ -165,7 +165,7 @@ void test_skiplist_delete(void) {
 }
 
 void test_skiplist_update(void) {
-  void *search_result;
+  skiplistNode *search_result;
   skiplist *sl = build_skiplist();
   SIValue find_prop;
   SIValue_FromString(&find_prop, words[2]);
@@ -185,16 +185,28 @@ void test_skiplist_update(void) {
 
   // The old key-value pair must have been deleted
   search_result = skiplistFind(sl, &old_prop);
-  void *ret;
+  int found_index = -1;
   if (search_result) {
-    ret = searchSkiplistNode(search_result, node_to_update, sl->valcmp);
-    assert(ret == NULL);
+    for (int i = 0; i < search_result->numVals; i ++) {
+      if (compareNodes(search_result->vals[0], node_to_update) == 0) {
+        found_index = i;
+        break;
+      }
+    }
+    assert(found_index == -1);
   }
 
   // The new key-value pair can be found
   search_result = skiplistFind(sl, new_prop);
-  ret = searchSkiplistNode(search_result, node_to_update, sl->valcmp);
-  assert(ret != NULL);
+  if (search_result) {
+    for (int i = 0; i < search_result->numVals; i ++) {
+      if (compareNodes(search_result->vals[0], node_to_update) == 0) {
+        found_index = i;
+        break;
+      }
+    }
+    assert(found_index >= 0);
+  }
 
   skiplistFree(sl);
 }

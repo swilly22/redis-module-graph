@@ -23,7 +23,7 @@ SIValue SI_DoubleVal(double d) {
   return (SIValue){.doubleval = d, .type = T_DOUBLE};
 }
 
-SIValue SI_StringVal(char *s) {
+SIValue SI_StringVal(const char *s) {
   return (SIValue){.stringval = strdup(s), .type = T_STRING};
 }
 
