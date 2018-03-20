@@ -70,6 +70,6 @@ int Vector_Cap(Vector *v);
  * they are pointers*/
 void Vector_Free(Vector *v);
 
-void* vector_val(Vector *v, size_t pos);
+void* vector_Val(Vector *v, size_t pos);
 
 #endif
