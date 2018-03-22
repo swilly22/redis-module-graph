@@ -284,9 +284,9 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
 
           // If the vals array has gotten >= 4x as large as its occupied region,
           // shrink the array
-          if (x->numVals > 0 && x->valsAllocated / 4 >= x->numVals) {
-            realloc(x->vals, x->numVals * sizeof(val));
-            x->valsAllocated = x->numVals;
+          if (x->numVals > 0 && x->valsAllocated >= x->numVals * 4) {
+            x->valsAllocated = x->numVals * 2;
+            realloc(x->vals, x->valsAllocated * sizeof(val));
           }
           break;
         }

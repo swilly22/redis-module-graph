@@ -57,14 +57,17 @@ void test_vals_allocation(void) {
   assert(node->valsAllocated == 128);
 
   for (i = 0; i <= 100; i ++) {
-    if (i % 10) skiplistDelete(sl, "a", val_array + i);
+    if (i % 5) skiplistDelete(sl, "a", val_array + i);
   }
 
-  // The array shrinks to numVals when a delete causes
-  // numVals to be <= valsAllocated / 4 ( 128 / 4 == 32)
-  assert(node->valsAllocated == 32);
-  // We are deleting 90 of the initial 100 values
-  assert(node->numVals == 10);
+  // When the vals array shrinks to <= 25% full, we reduce its capacity by half.
+  // In this case, we populate the array to contain 100 values and have space for 128.
+  // We then delete 4 of every 5 values. When numVals == 32, we shrink the array
+  // to allow for 64 elements.
+  assert(node->valsAllocated == 64);
+  // When we finish our deletions, there are 20 values remaining (the array length would be
+  // cut in half again if we deleted 4 more values).
+  assert(node->numVals == 20);
 }
 
 // Verify lexicographic sorting of string keys
