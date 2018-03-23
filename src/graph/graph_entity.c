@@ -37,7 +37,11 @@ void GraphEntity_Update_Property(GraphEntity *e, const char *key, SIValue *value
     }
   }
   if (found >= 0) {
-    // SIValue_Free(&e->properties[i].value);
+    // TODO Not calling SIValue_Free here will cause a memory leak if the value is a heap-allocated string
+    // owned exclusively by this property, but if the string is shared or not a heap allocation, this call
+    // will cause crashes. Revisit once the logic surrounding SIValue allocations is cemented.
+
+    // SIValue_Free(&e->properties[found].value);
     e->properties[found].value = SI_Clone(*value);
   } else {
     char *new_key = strdup(key);
