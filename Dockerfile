@@ -15,7 +15,8 @@ ADD ./ /redisgraph
 WORKDIR /redisgraph
 RUN set -ex;\
     make clean; \
-    make all -j 4;
+    make all -j 4; \
+    make test;
 
 # Package the runner
 FROM redis:latest
