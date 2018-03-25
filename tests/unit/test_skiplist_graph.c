@@ -11,24 +11,6 @@ char *words[] = {"foo",  "bar",     "zap",    "pomo",
 const char *node_label = "default_label";
 char *prop_key = "default_prop_key";
 
-static inline double compKey(SIValue *v) {
-  switch (v->type) {
-    case T_DOUBLE:
-      return v->doubleval;
-    case T_INT64:
-      return (double)v->longval;
-    case T_INT32:
-      return (double)v->intval;
-    case T_UINT:
-      return (double)v->uintval;
-    case T_FLOAT:
-      return (double)v->floatval;
-    default:
-      fprintf(stderr, "Unexpected value type encountered in compKey");
-      exit(1);
-  }
-}
-
 int compareNodes(const void *p1, const void *p2) {
   Node *a = (Node *)p1;
   Node *b = (Node *)p2;
@@ -49,11 +31,9 @@ int compareSI(void *p1, void *p2, void *ctx) {
     return strcmp(a->stringval, b->stringval);
   } else if ((a->type & SI_NUMERIC) && (b->type & SI_NUMERIC)) {
 
-    double a_cast = compKey(a);
-    double b_cast = compKey(b);
-    if (a_cast > b_cast) {
+    if (a->doubleval > b->doubleval) {
       return 1;
-    } else if (a_cast < b_cast) {
+    } else if (a->doubleval < b->doubleval) {
       return -1;
     } else {
       return 0;
@@ -62,8 +42,6 @@ int compareSI(void *p1, void *p2, void *ctx) {
 }
 
 void freeVal(void *p1) {
-  // SIValue_Free breaks on stack-allocated variables
-  // SIValue_Free(p1);
   free(p1);
 }
 
@@ -118,7 +96,7 @@ void test_skiplist_range(void) {
   long last_id = 3;
   skiplistIterator iter;
   // Iterate over a range of keys [1, INF)
-  SIValue min = {.doubleval = 1, .type = T_DOUBLE};
+  SIValue min = SI_DoubleVal(1);
   iter = skiplistIterateRange(sl, &min, NULL, 1, 0);
   while ((cur_node = skiplistIterator_Next(&iter)) != NULL) {
     assert(last_id + 1 == cur_node->id);
@@ -188,7 +166,7 @@ void test_skiplist_update(void) {
   int found_index = -1;
   if (search_result) {
     for (int i = 0; i < search_result->numVals; i ++) {
-      if (compareNodes(search_result->vals[0], node_to_update) == 0) {
+      if (compareNodes(search_result->vals[i], node_to_update) == 0) {
         found_index = i;
         break;
       }
@@ -200,7 +178,7 @@ void test_skiplist_update(void) {
   search_result = skiplistFind(sl, new_prop);
   if (search_result) {
     for (int i = 0; i < search_result->numVals; i ++) {
-      if (compareNodes(search_result->vals[0], node_to_update) == 0) {
+      if (compareNodes(search_result->vals[i], node_to_update) == 0) {
         found_index = i;
         break;
       }
@@ -211,48 +189,7 @@ void test_skiplist_update(void) {
   skiplistFree(sl);
 }
 
-/*
- * This test serves two purposes:
- * Test skiplist compatibility with Redis-Graph's specialized types,
- * and ensure that values sharing a single skiplist key are also sorted
- */
-void test_skiplist_sort(void) {
-  // Build a skiplist of Node * values with an internal SIValue property as a key,
-  // and use the Node id for a secondary sort
-
-  skiplist *sl = build_skiplist();
-  Node *cur_node;
-  SIValue *cur_prop;
-  const char *node_label = "default_label";
-  char *prop_key = "default_prop_key";
-
-  skiplistIterator iter = skiplistIterateAll(sl);
-
-  void *val;
-  char *last_key = "", *cur_key;
-  long last_id, cur_id;
-  while ((val = skiplistIterator_Next(&iter)) != NULL) {
-    cur_node = (Node *) val;
-    cur_id = cur_node->id;
-    cur_key = Node_Get_Property(cur_node, prop_key)->stringval;
-    if (strcmp(last_key, cur_key)) {
-      // We have moved on to a different key; reset the secondary sort comparison
-      last_id = -1;
-    }
-    // Keys should be alphabetically sorted
-    assert (strcmp(last_key, cur_key) <= 0);
-    // Value IDs should be numerically sorted
-    assert (last_id < cur_id);
-    // Debug printing
-    // printf("indexed property: \"%s\"\n",  cur_node->properties[0].value.stringval);
-    // printf("node id: %ld\n", cur_node->id);
-  }
-
-  skiplistFree(sl);
-}
-
 int main(void) {
-  test_skiplist_sort();
   test_skiplist_delete();
   test_skiplist_update();
   test_skiplist_range();
