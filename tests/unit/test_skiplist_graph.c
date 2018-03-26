@@ -151,30 +151,22 @@ void test_skiplist_update(void) {
   Node *node_to_update = old_skiplist_node->vals[0];
 
   SIValue *new_prop = malloc(sizeof(SIValue));
-  SIValue old_prop = SI_Clone(*Node_Get_Property(node_to_update, prop_key));
+  SIValue old_prop = *Node_Get_Property(node_to_update, prop_key);
   SIValue_FromString(new_prop, "updated_val");
-  // Update an existing key-value pair in the index
-  skiplistNode *new_skiplist_node = update_skiplist(sl, node_to_update, &old_prop, new_prop);
   // Update an existing key-value pair in the Node properties
   GraphEntity_Update_Property((GraphEntity *)node_to_update, prop_key, new_prop);
+  // Update the index to reflect the changed Node property
+  skiplistNode *new_skiplist_node = update_skiplist(sl, node_to_update, &old_prop, new_prop);
 
   // The new skiplistNode should have the new key
   assert(!strcmp(((SIValue *)new_skiplist_node->obj)->stringval, "updated_val"));
 
   // The old key-value pair must have been deleted
-  search_result = skiplistFind(sl, &old_prop);
-  int found_index = -1;
-  if (search_result) {
-    for (int i = 0; i < search_result->numVals; i ++) {
-      if (compareNodes(search_result->vals[i], node_to_update) == 0) {
-        found_index = i;
-        break;
-      }
-    }
-    assert(found_index == -1);
-  }
+  int delete_result = skiplistDelete(sl, & old_prop, node_to_update);
+  assert(delete_result == 0);
 
   // The new key-value pair can be found
+  int found_index = -1;
   search_result = skiplistFind(sl, new_prop);
   if (search_result) {
     for (int i = 0; i < search_result->numVals; i ++) {

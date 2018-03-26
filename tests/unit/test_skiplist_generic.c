@@ -92,6 +92,7 @@ void test_string_sorts(void) {
   while ((val = skiplistPopHead(string_sl)) != NULL) {
     str_ret = strcmp(prevVal, val);
     assert(str_ret < 0);
+    prevVal = val;
   }
 
   skiplistFree(string_sl);
@@ -217,10 +218,10 @@ void test_sl_iterator(void) {
 }
 
 int main(void) {
-  test_string_sorts();
-  test_sl_iterator();
-  test_numeric_sorts();
   test_vals_allocation();
+  test_string_sorts();
+  test_numeric_sorts();
+  test_sl_iterator();
 
   printf("test_skiplist - PASS!\n");
 }
