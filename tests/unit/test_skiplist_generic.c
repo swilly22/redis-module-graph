@@ -55,8 +55,8 @@ void test_vals_allocation() {
   // The values array initially increases by powers of 2
   assert(node->valsAllocated == 128);
 
-  for (i = 0; i <= 100; i ++) {
-    if ((int)i % 5) skiplistDelete(sl, "a", &i);
+  for (i = 0; i < 80; i ++) {
+    skiplistDelete(sl, "a", &i);
   }
 
   // When the vals array shrinks to <= 25% full, we reduce its capacity by half.
