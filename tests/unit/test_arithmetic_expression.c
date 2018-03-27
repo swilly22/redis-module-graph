@@ -476,8 +476,9 @@ void test_substring() {
     AR_ExpNode *root = AR_EXP_NewOpNode("SUBSTRING", 3);
     AR_ExpNode *original_str = AR_EXP_NewConstOperandNode(SI_StringVal("muchacho"));
     AR_ExpNode *start = AR_EXP_NewConstOperandNode(SI_DoubleVal(0));
+    AR_ExpNode *zero = start;
     AR_ExpNode *length = AR_EXP_NewConstOperandNode(SI_DoubleVal(4));
-    AR_ExpNode *start_middel = AR_EXP_NewConstOperandNode(SI_DoubleVal(3));
+    AR_ExpNode *start_middle = AR_EXP_NewConstOperandNode(SI_DoubleVal(3));
     AR_ExpNode *length_overflow = AR_EXP_NewConstOperandNode(SI_DoubleVal(20));
     AR_ExpNode *null = AR_EXP_NewConstOperandNode(SI_NullVal());
 
@@ -489,17 +490,23 @@ void test_substring() {
     assert(strcmp(result.stringval, expected) == 0);
 
     root->op.children[0] = original_str;
-    root->op.children[1] = start_middel;
+    root->op.children[1] = start_middle;
     root->op.children[2] = length_overflow;
     result = AR_EXP_Evaluate(root);
     expected = "hacho";
     assert(strcmp(result.stringval, expected) == 0);
 
     root->op.children[0] = null;
-    root->op.children[1] = start_middel;
+    root->op.children[1] = start_middle;
     root->op.children[2] = length_overflow;
     result = AR_EXP_Evaluate(root);
     assert(result.type == T_NULL);
+
+    root->op.children[0] = original_str;
+    root->op.children[1] = start_middle;
+    root->op.children[2] = zero;
+    result = AR_EXP_Evaluate(root);
+    assert(strcmp(result.stringval, "") == 0);
 }
 
 void test_tolower() {
