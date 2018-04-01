@@ -58,6 +58,70 @@ expr(A) ::= createClause(B). {
 	A = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
 }
 
+expr(A) ::= CREATE INDEX ON COLON UQSTRING(B) LEFT_PARENTHESIS UQSTRING(C) RIGHT_PARENTHESIS . {
+// build the match node
+// we're setting the label and alias both
+  AST_NodeEntity *a1 = New_AST_NodeEntity(B.strval, B.strval, NULL);
+  Vector *b1 = NewVector(AST_NodeEntity*, 1);
+  Vector_Push(b1, a1);
+AST_MatchNode *matchnode = New_AST_MatchNode(b1);
+
+// build the return node
+// arg 1 is alias, 2 is property
+AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_VariableOperandNode(B.strval, NULL);
+
+/* AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_ConstOperandNode(z); */
+AST_ReturnElementNode *a2 = New_AST_ReturnElementNode(returnString, 0);
+  Vector *b2 = NewVector(AST_ReturnElementNode*, 1);
+  Vector_Push(b2, a2);
+AST_ReturnNode *returnnode = New_AST_ReturnNode(b2, 0);
+
+// build the order node
+  Vector *b3 = NewVector(AST_ColumnNode*, 1);
+// arg 1 is alias (necessary), 2 is property (optional).
+  Vector_Push(b3, New_AST_ColumnNode(B.strval, C.strval, N_VARIABLE));
+AST_OrderNode *ordernode = New_AST_OrderNode(b3, ORDER_DIR_ASC);
+
+A = New_AST_QueryExpressionNode(matchnode, NULL, NULL, NULL, NULL, returnnode, ordernode, NULL);
+}
+/*
+expr(A) ::= CREATE INDEX ON label(B) target(C). {
+SIValue x = SI_StringVal("name");
+
+AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_ConstOperandNode(x);
+AST_ReturnElementNode* y = New_AST_ReturnElementNode(returnString, 0);
+  Vector *returnNodes = NewVector(AST_ReturnElementNode*, 1);
+  Vector_Push(returnNodes, y);
+
+AST_ReturnNode *z = New_AST_ReturnNode(returnNodes, 0);
+  A = New_AST_QueryExpressionNode(B, NULL, NULL, NULL, NULL, z, C, NULL);
+}
+
+%type label { AST_MatchNode* }
+
+label(A) ::= COLON UQSTRING(B). {
+// If the Node needs properties, it should be a vector as the third argument
+  AST_NodeEntity *x = New_AST_NodeEntity(NULL, B.strval, NULL);
+  Vector *y = NewVector(AST_NodeEntity*, 1);
+  Vector_Push(y, x);
+
+	A = New_AST_MatchNode(y);
+}
+
+%type target { AST_OrderNode* }
+target(A) ::= LEFT_PARENTHESIS columnVector(B) RIGHT_PARENTHESIS. {
+	A = New_AST_OrderNode(B, ORDER_DIR_ASC);
+}
+
+%type columnVector { Vector* }
+
+columnVector(A) ::= UQSTRING(B). {
+  A = NewVector(AST_ColumnNode*, 1);
+// arg 1 is alias (necessary), 2 is property (optional).
+  Vector_Push(A, New_AST_ColumnNode(B.strval, B.strval, N_VARIABLE));
+}
+*/
+
 %type matchClause { AST_MatchNode* }
 
 matchClause(A) ::= MATCH chains(B). {
@@ -138,7 +202,7 @@ deleteExpression(A) ::= UQSTRING(B). {
 }
 
 deleteExpression(A) ::= deleteExpression(B) COMMA UQSTRING(C). {
-	Vector_Push(B, C.strval);
+  Vector_Push(B, C.strval);
 	A = B;
 }
 
