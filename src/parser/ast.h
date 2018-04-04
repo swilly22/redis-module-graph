@@ -179,13 +179,17 @@ typedef struct {
 	AST_ColumnNodeType type;
 } AST_ColumnNode;
 
+typedef enum {
+  T_CREATE = 0x001,
+  T_DROP = 0x002,
+} AST_IndexOpType;
 
 typedef struct {
-  char *label;
-  char *property;
-} AST_IndexOp;
+  const char *label;
+  const char *property;
+  AST_IndexOpType operation;
+} AST_IndexOpNode;
 
-// This is what all queries construct right now
 typedef struct {
 	AST_MatchNode *matchNode;
 	AST_CreateNode *createNode;
@@ -197,18 +201,16 @@ typedef struct {
 	AST_LimitNode *limitNode;
 } AST_QueryExpressionNode;
 
-
 typedef enum {
   T_UNSET = 0,
   T_EXPRESSION = 0x001,
   T_INDEX = 0x002,
-
 } AST_QueryType;
 
 typedef struct {
   union {
     AST_QueryExpressionNode *ast;
-    AST_IndexOp *indexOp;
+    AST_IndexOpNode *indexOp;
   };
   AST_QueryType type;
 } AST_Query;
@@ -243,6 +245,9 @@ AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, A
 													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
 													 AST_OrderNode *orderNode, AST_LimitNode *limitNode);
+
+/* Build AST_Query for index operations */
+AST_IndexOpNode* AST_IndexOp(const char *label, const char *property);
 
 AST_Query* Allocate_AST_Query();
 

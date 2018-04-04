@@ -70,48 +70,28 @@ expr(A) ::= createClause(B). {
   A->type = T_EXPRESSION;
 }
 
-expr(A) ::= CREATE INDEX ON COLON UQSTRING(B) LEFT_PARENTHESIS UQSTRING(C) RIGHT_PARENTHESIS . {
-A = Allocate_AST_Query();
-A->indexOp = createIndexOp(B, C);
-A->type = T_INDEX;
-}
-/*
-expr(A) ::= CREATE INDEX ON label(B) target(C). {
-SIValue x = SI_StringVal("name");
-
-AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_ConstOperandNode(x);
-AST_ReturnElementNode* y = New_AST_ReturnElementNode(returnString, 0);
-  Vector *returnNodes = NewVector(AST_ReturnElementNode*, 1);
-  Vector_Push(returnNodes, y);
-
-AST_ReturnNode *z = New_AST_ReturnNode(returnNodes, 0);
-  A = New_AST_QueryExpressionNode(B, NULL, NULL, NULL, NULL, z, C, NULL);
+expr(A) ::= CREATE INDEX ON indexLabel(B) indexProp(C) . {
+  A = Allocate_AST_Query();
+  A->indexOp = AST_IndexOp(B.strval, C.strval);
+  A->indexOp->operation = T_CREATE;
+  A->type = T_INDEX;
 }
 
-%type label { AST_MatchNode* }
 
-label(A) ::= COLON UQSTRING(B). {
-// If the Node needs properties, it should be a vector as the third argument
-  AST_NodeEntity *x = New_AST_NodeEntity(NULL, B.strval, NULL);
-  Vector *y = NewVector(AST_NodeEntity*, 1);
-  Vector_Push(y, x);
-
-	A = New_AST_MatchNode(y);
+expr(A) ::= DROP INDEX ON indexLabel(B) indexProp(C) . {
+  A = Allocate_AST_Query();
+  A->indexOp = AST_IndexOp(B.strval, C.strval);
+  A->indexOp->operation = T_DROP;
+  A->type = T_INDEX;
 }
 
-%type target { AST_OrderNode* }
-target(A) ::= LEFT_PARENTHESIS columnVector(B) RIGHT_PARENTHESIS. {
-	A = New_AST_OrderNode(B, ORDER_DIR_ASC);
+indexLabel(A) ::= COLON UQSTRING(B) . {
+  A = B;
 }
 
-%type columnVector { Vector* }
-
-columnVector(A) ::= UQSTRING(B). {
-  A = NewVector(AST_ColumnNode*, 1);
-// arg 1 is alias (necessary), 2 is property (optional).
-  Vector_Push(A, New_AST_ColumnNode(B.strval, B.strval, N_VARIABLE));
+indexProp(A) ::= LEFT_PARENTHESIS UQSTRING(B) RIGHT_PARENTHESIS . {
+  A = B;
 }
-*/
 
 %type matchClause { AST_MatchNode* }
 

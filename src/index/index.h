@@ -14,6 +14,6 @@ int compareNodes(const void *p1, const void *p2);
 int compareSI(void *p1, void *p2, void *ctx);
 void freeVal(void *p1);
 
-skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_QueryExpressionNode *ast);
+skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *ast);
 
 #endif

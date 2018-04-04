@@ -349,14 +349,13 @@ int Query_Modifies_KeySpace(const AST_QueryExpressionNode *ast) {
 AST_Query* ParseQuery(const char *query_str, size_t qLen, char **errMsg) {
     AST_Query *query = Query_Parse(query_str, qLen, errMsg);
     
-    AST_QueryExpressionNode *ast = query->ast;
-
-    if (!ast) {
-        return NULL;
-    }
-    
     if (query->type == T_INDEX) {
       return query;
+    }
+
+    AST_QueryExpressionNode *ast = query->ast;
+    if (!ast) {
+        return NULL;
     }
 
     /* Modify AST. */

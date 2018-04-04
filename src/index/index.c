@@ -39,9 +39,10 @@ void freeVal(void *p1) {
   free(p1);
 }
 
-skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_QueryExpressionNode *ast) {
-  char *label = "actor"; // AST should give us this
-  char *index_prop = "age";
+skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *indexOp) {
+  const char *label = indexOp->label;
+  const char *index_prop = indexOp->property;
+
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, label);
 
   LabelStoreIterator *it_test = LabelStore_Search(store, "");
