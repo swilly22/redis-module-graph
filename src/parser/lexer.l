@@ -37,6 +37,7 @@ int yycolumn = 1;
 "LIMIT"     { return LIMIT; }
 "INDEX"     { return INDEX; }
 "ON"        { return ON; }
+"DROP"      { return DROP; }
 
 
 [0-9]*\.[0-9]+    {

@@ -47,7 +47,7 @@ int Records_Compare(const Record *A, const Record *B, int* compareIndices, size_
         aValue = A->values[index];
         bValue = B->values[index];
         
-        /* Asuuming both values are of type double. */
+        /* Assuming both values are of type double. */
         if(aValue.doubleval > bValue.doubleval) {
             return 1;
         } else if(aValue.doubleval < bValue.doubleval) {

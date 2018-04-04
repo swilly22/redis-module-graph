@@ -140,11 +140,18 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     if (query->type == T_INDEX) {
-      createIndex(ctx, graphName, ast);
+      if (query->indexOp->operation == T_CREATE) {
+        createIndex(ctx, graphName, query->indexOp);
+      } else {
+        errMsg = "Redis-Graph only supports index creation operations at present.\n";
+        RedisModule_ReplyWithError(ctx, errMsg);
+        return REDISMODULE_OK;
+      }
+
       end = clock();
       double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
       double elapsedMS = elapsed * 1000;
-      char* strElapsed;
+      char *strElapsed;
       asprintf(&strElapsed, "Query internal execution time: %f milliseconds", elapsedMS);
       RedisModule_ReplyWithStringBuffer(ctx, strElapsed, strlen(strElapsed));
       free(strElapsed);
