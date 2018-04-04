@@ -187,6 +187,10 @@ typedef enum {
 typedef struct {
   const char *label;
   const char *property;
+} IndexTarget;
+
+typedef struct {
+  IndexTarget target;
   AST_IndexOpType operation;
 } AST_IndexOpNode;
 
