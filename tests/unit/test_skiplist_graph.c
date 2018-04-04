@@ -4,52 +4,13 @@
 #include "../../src/util/skiplist.h"
 #include "../../src/value.h"
 #include "../../src/graph/node.h"
+#include "../../src/index/index.h"
 
 char *words[] = {"foo",  "bar",     "zap",    "pomo",
                  "pera", "arancio", "limone", NULL};
 
 const char *node_label = "default_label";
 char *prop_key = "default_prop_key";
-
-int compareNodes(const void *p1, const void *p2) {
-  Node *a = (Node *)p1;
-  Node *b = (Node *)p2;
-
-  if (a->id > b->id) {
-    return 1;
-  } else if (a->id < b->id) {
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
-int compareSI(void *p1, void *p2, void *ctx) {
-  SIValue *a = p1, *b = p2;
-
-  if (a->type & b->type & T_STRING) {
-    return strcmp(a->stringval, b->stringval);
-  } else if ((a->type & SI_NUMERIC) && (b->type & SI_NUMERIC)) {
-
-    if (a->doubleval > b->doubleval) {
-      return 1;
-    } else if (a->doubleval < b->doubleval) {
-      return -1;
-    } else {
-      return 0;
-    }
-  }
-
-  // We can only compare string and numeric SIValues, so any other type
-  // (such as a pointer or NULL) should error if ever reaching here.
-  assert(0);
-
-  return 0;
-}
-
-void freeVal(void *p1) {
-  free(p1);
-}
 
 skiplist* build_skiplist(void) {
   skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);

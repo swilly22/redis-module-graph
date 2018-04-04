@@ -36,6 +36,8 @@
 
 #include "execution_plan/execution_plan.h"
 
+#include "index/index.h"
+
 /* Removes given graph.
  * Args:
  * argv[1] graph name
@@ -136,7 +138,19 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         free(errMsg);
         return REDISMODULE_OK;
     }
-    
+
+    if (query->type == T_INDEX) {
+      createIndex(ctx, graphName, ast);
+      end = clock();
+      double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+      double elapsedMS = elapsed * 1000;
+      char* strElapsed;
+      asprintf(&strElapsed, "Query internal execution time: %f milliseconds", elapsedMS);
+      RedisModule_ReplyWithStringBuffer(ctx, strElapsed, strlen(strElapsed));
+      free(strElapsed);
+      return REDISMODULE_OK;
+    }
+
     char *reason;
     if (Validate_AST(ast, &reason) != AST_VALID) {
         RedisModule_ReplyWithError(ctx, reason);

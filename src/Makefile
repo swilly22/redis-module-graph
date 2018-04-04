@@ -41,6 +41,7 @@ CC_SOURCES += $(SOURCEDIR)/parser/grammar.c
 CC_SOURCES += $(wildcard $(SOURCEDIR)/resultset/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/stores/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/util/*.c)
+CC_SOURCES += $(wildcard $(SOURCEDIR)/index/*.c)
 
 # Convert all sources to .o files
 CC_OBJECTS = $(patsubst %.c, %.o, $(CC_SOURCES) )
@@ -79,7 +80,7 @@ $(LIBTRIEMAP):
 	$(MAKE) -C util/triemap
 .PHONY: $(LIBTRIEMAP)
 
-# Compile query parse. 
+# Compile query parse.
 # This is not included in the usual make target!
 parser:
 	$(MAKE) -C $@
