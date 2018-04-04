@@ -260,7 +260,7 @@ void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 AST_Query* Allocate_AST_Query() {
   AST_Query *query = malloc(sizeof(AST_Query));
   query->ast = NULL;
-  query->type = T_UNSET;
+  query->type = AST_UNSET;
 
   return query;
 }

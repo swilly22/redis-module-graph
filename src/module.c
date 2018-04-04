@@ -139,8 +139,8 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    if (query->type == T_INDEX) {
-      if (query->indexOp->operation == T_CREATE) {
+    if (query->type == AST_INDEX) {
+      if (query->indexOp->operation == CREATE_INDEX) {
         createIndex(ctx, graphName, query->indexOp);
       } else {
         errMsg = "Redis-Graph only supports index creation operations at present.\n";
@@ -224,7 +224,7 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModule_ReplyWithError(ctx, errMsg);
         free(errMsg);
         return REDISMODULE_OK;
-    } else if (query->type == T_INDEX) {
+    } else if (query->type == AST_INDEX) {
       // Describe index execution
     }
     

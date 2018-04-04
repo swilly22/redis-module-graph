@@ -1176,7 +1176,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(yymsp[-5].minor.yy9, yymsp[-4].minor.yy111, yymsp[-3].minor.yy82, NULL, NULL, yymsp[-2].minor.yy16, yymsp[-1].minor.yy114, yymsp[0].minor.yy29);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1182 "grammar.c"
   yymsp[-5].minor.yy8 = yylhsminor.yy8;
@@ -1186,7 +1186,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(yymsp[-2].minor.yy9, yymsp[-1].minor.yy111, yymsp[0].minor.yy82, NULL, NULL, NULL, NULL, NULL);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1192 "grammar.c"
   yymsp[-2].minor.yy8 = yylhsminor.yy8;
@@ -1196,7 +1196,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(yymsp[-2].minor.yy9, yymsp[-1].minor.yy111, NULL, NULL, yymsp[0].minor.yy147, NULL, NULL, NULL);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1202 "grammar.c"
   yymsp[-2].minor.yy8 = yylhsminor.yy8;
@@ -1206,7 +1206,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(yymsp[-2].minor.yy9, yymsp[-1].minor.yy111, NULL, yymsp[0].minor.yy26, NULL, NULL, NULL, NULL);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1212 "grammar.c"
   yymsp[-2].minor.yy8 = yylhsminor.yy8;
@@ -1216,7 +1216,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(yymsp[-5].minor.yy9, yymsp[-4].minor.yy111, NULL, yymsp[-3].minor.yy26, NULL, yymsp[-2].minor.yy16, yymsp[-1].minor.yy114, yymsp[0].minor.yy29);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1222 "grammar.c"
   yymsp[-5].minor.yy8 = yylhsminor.yy8;
@@ -1226,7 +1226,7 @@ static void yy_reduce(
 {
   yylhsminor.yy8 = Allocate_AST_Query();
 	yylhsminor.yy8->ast = New_AST_QueryExpressionNode(NULL, NULL, yymsp[0].minor.yy82, NULL, NULL, NULL, NULL, NULL);
-  yylhsminor.yy8->type = T_EXPRESSION;
+  yylhsminor.yy8->type = AST_EXPRESSION;
 }
 #line 1232 "grammar.c"
   yymsp[0].minor.yy8 = yylhsminor.yy8;
@@ -1236,8 +1236,8 @@ static void yy_reduce(
 {
   yymsp[-4].minor.yy8 = Allocate_AST_Query();
   yymsp[-4].minor.yy8->indexOp = AST_IndexOp(yymsp[-1].minor.yy0.strval, yymsp[0].minor.yy0.strval);
-  yymsp[-4].minor.yy8->indexOp->operation = T_CREATE;
-  yymsp[-4].minor.yy8->type = T_INDEX;
+  yymsp[-4].minor.yy8->indexOp->operation = CREATE_INDEX;
+  yymsp[-4].minor.yy8->type = AST_INDEX;
 }
 #line 1243 "grammar.c"
         break;
@@ -1246,8 +1246,8 @@ static void yy_reduce(
 {
   yymsp[-4].minor.yy8 = Allocate_AST_Query();
   yymsp[-4].minor.yy8->indexOp = AST_IndexOp(yymsp[-1].minor.yy0.strval, yymsp[0].minor.yy0.strval);
-  yymsp[-4].minor.yy8->indexOp->operation = T_DROP;
-  yymsp[-4].minor.yy8->type = T_INDEX;
+  yymsp[-4].minor.yy8->indexOp->operation = DROP_INDEX;
+  yymsp[-4].minor.yy8->type = AST_INDEX;
 }
 #line 1253 "grammar.c"
         break;

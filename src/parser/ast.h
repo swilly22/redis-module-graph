@@ -180,8 +180,8 @@ typedef struct {
 } AST_ColumnNode;
 
 typedef enum {
-  T_CREATE = 0x001,
-  T_DROP = 0x002,
+  CREATE_INDEX,
+  DROP_INDEX
 } AST_IndexOpType;
 
 typedef struct {
@@ -202,9 +202,9 @@ typedef struct {
 } AST_QueryExpressionNode;
 
 typedef enum {
-  T_UNSET = 0,
-  T_EXPRESSION = 0x001,
-  T_INDEX = 0x002,
+  AST_UNSET,
+  AST_EXPRESSION,
+  AST_INDEX,
 } AST_QueryType;
 
 typedef struct {

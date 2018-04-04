@@ -37,52 +37,52 @@ query ::= expr(A). { ctx->root = A; }
 expr(A) ::= matchClause(B) whereClause(C) createClause(D) returnClause(E) orderClause(F) limitClause(G). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) deleteClause(D). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D) returnClause(E) orderClause(F) limitClause(G). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= createClause(B). {
   A = Allocate_AST_Query();
 	A->ast = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
-  A->type = T_EXPRESSION;
+  A->type = AST_EXPRESSION;
 }
 
 expr(A) ::= CREATE INDEX ON indexLabel(B) indexProp(C) . {
   A = Allocate_AST_Query();
   A->indexOp = AST_IndexOp(B.strval, C.strval);
-  A->indexOp->operation = T_CREATE;
-  A->type = T_INDEX;
+  A->indexOp->operation = CREATE_INDEX;
+  A->type = AST_INDEX;
 }
 
 
 expr(A) ::= DROP INDEX ON indexLabel(B) indexProp(C) . {
   A = Allocate_AST_Query();
   A->indexOp = AST_IndexOp(B.strval, C.strval);
-  A->indexOp->operation = T_DROP;
-  A->type = T_INDEX;
+  A->indexOp->operation = DROP_INDEX;
+  A->type = AST_INDEX;
 }
 
 indexLabel(A) ::= COLON UQSTRING(B) . {
