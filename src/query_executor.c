@@ -170,7 +170,7 @@ void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_QueryExpressionN
      /* Create a new return clause */
     Vector *expandReturnElements = NewVector(AST_ReturnElementNode*, Vector_Size(ast->returnNode->returnElements));
 
-    /* Scan return cluase, search for collapsed nodes. */
+    /* Scan return clause, search for collapsed nodes. */
     for(int i = 0; i < Vector_Size(ast->returnNode->returnElements); i++) {
         AST_ReturnElementNode *ret_elem;
         Vector_Get(ast->returnNode->returnElements, i, &ret_elem);
@@ -228,7 +228,7 @@ void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_QueryExpressionN
                 }
                 TrieMapIterator_Free(it);
             } else {
-                /* Entity does have a label.
+                /* Entity doesn't have a label.
                  * We don't have a choice but to retrieve all know properties. */
                 size_t stores_len = 128;    /* Limit number of labels we'll consider. */
                 LabelStore *stores[128];    /* Label stores. */
@@ -346,16 +346,22 @@ int Query_Modifies_KeySpace(const AST_QueryExpressionNode *ast) {
     return (ast->createNode != NULL || ast->deleteNode != NULL);
 }
 
-AST_QueryExpressionNode* ParseQuery(const char *query, size_t qLen, char **errMsg) {
-    AST_QueryExpressionNode *ast = Query_Parse(query, qLen, errMsg);
+AST_Query* ParseQuery(const char *query_str, size_t qLen, char **errMsg) {
+    AST_Query *query = Query_Parse(query_str, qLen, errMsg);
     
+    AST_QueryExpressionNode *ast = query->ast;
+
     if (!ast) {
         return NULL;
     }
     
+    if (query->type == T_INDEX) {
+      return query;
+    }
+
     /* Modify AST. */
     nameAnonymousNodes(ast);
     inlineProperties(ast);
 
-    return ast;
+    return query;
 }

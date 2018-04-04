@@ -120,15 +120,15 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     clock_t end;
 
     const char *graphName;
-    const char *query;
-    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query);
+    const char *query_str;
+    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query_str);
 
     /* Parse query, get AST. */
     char *errMsg = NULL;
 
-    AST_QueryExpressionNode* ast;
+    AST_Query *query = ParseQuery(query_str, strlen(query_str), &errMsg);
 
-    ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_QueryExpressionNode* ast = query->ast;
 
     if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
@@ -191,20 +191,24 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 2) return RedisModule_WrongArity(ctx);
     
     const char *graphName;
-    const char *query;
-    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query);
+    const char *query_str;
+    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query_str);
 
     /* Parse query, get AST. */
     char *errMsg = NULL;
-    AST_QueryExpressionNode *ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *query = ParseQuery(query_str, strlen(query_str), &errMsg);
     
-    if (!ast) {
+    if (!query->ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
         RedisModule_ReplyWithError(ctx, errMsg);
         free(errMsg);
         return REDISMODULE_OK;
+    } else if (query->type == T_INDEX) {
+      // Describe index execution
     }
     
+    AST_QueryExpressionNode *ast = query->ast;
+
     /* Modify AST */
     if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
         /* Expand collapsed nodes. */

@@ -69,7 +69,7 @@ typedef struct {
 			char *property;
 		} nodeVal;
 	};
-	AST_CompareValueType t; // Comapred value type, constant/node
+	AST_CompareValueType t; // Compared value type, constant/node
 	char *alias;		// Node alias
 	char *property; 	// Node property
 	int op;				// Type of comparison
@@ -179,6 +179,13 @@ typedef struct {
 	AST_ColumnNodeType type;
 } AST_ColumnNode;
 
+
+typedef struct {
+  char *label;
+  char *property;
+} AST_IndexOp;
+
+// This is what all queries construct right now
 typedef struct {
 	AST_MatchNode *matchNode;
 	AST_CreateNode *createNode;
@@ -189,6 +196,22 @@ typedef struct {
 	AST_OrderNode *orderNode;
 	AST_LimitNode *limitNode;
 } AST_QueryExpressionNode;
+
+
+typedef enum {
+  T_UNSET = 0,
+  T_EXPRESSION = 0x001,
+  T_INDEX = 0x002,
+
+} AST_QueryType;
+
+typedef struct {
+  union {
+    AST_QueryExpressionNode *ast;
+    AST_IndexOp *indexOp;
+  };
+  AST_QueryType type;
+} AST_Query;
 
 AST_NodeEntity* New_AST_NodeEntity(char *alias, char *label, Vector *properties);
 AST_LinkEntity* New_AST_LinkEntity(char *alias, char *relationship, Vector *properties, AST_LinkDirection dir);
@@ -204,7 +227,7 @@ AST_ArithmeticExpressionNode* New_AST_AR_EXP_VariableOperandNode(char* alias, ch
 AST_ArithmeticExpressionNode* New_AST_AR_EXP_ConstOperandNode(SIValue constant);
 AST_ArithmeticExpressionNode* New_AST_AR_EXP_OpNode(char *func, Vector *args);
 
-/* Set cluase individual elements. */
+/* Set clause individual elements. */
 AST_SetElement* New_AST_SetElement(AST_Variable *updated_entity, AST_ArithmeticExpressionNode *exp);
 
 AST_WhereNode* New_AST_WhereNode(AST_FilterNode *filters);
@@ -220,6 +243,8 @@ AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, A
 													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
 													 AST_OrderNode *orderNode, AST_LimitNode *limitNode);
+
+AST_Query* Allocate_AST_Query();
 
 /* AST Validations */
 AST_Validation _Validate_MATCH_Clause(const AST_QueryExpressionNode* ast, char **reason);

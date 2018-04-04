@@ -30,59 +30,50 @@
 
 %extra_argument { parseCtx *ctx }
 
-%type expr {AST_QueryExpressionNode*}
+%type expr {AST_Query*}
 
 query ::= expr(A). { ctx->root = A; }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D) returnClause(E) orderClause(F) limitClause(G). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) deleteClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D) returnClause(E) orderClause(F) limitClause(G). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= createClause(B). {
-	A = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
+  A = Allocate_AST_Query();
+	A->ast = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
+  A->type = T_EXPRESSION;
 }
 
 expr(A) ::= CREATE INDEX ON COLON UQSTRING(B) LEFT_PARENTHESIS UQSTRING(C) RIGHT_PARENTHESIS . {
-// build the match node
-// we're setting the label and alias both
-  AST_NodeEntity *a1 = New_AST_NodeEntity(B.strval, B.strval, NULL);
-  Vector *b1 = NewVector(AST_NodeEntity*, 1);
-  Vector_Push(b1, a1);
-AST_MatchNode *matchnode = New_AST_MatchNode(b1);
-
-// build the return node
-// arg 1 is alias, 2 is property
-AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_VariableOperandNode(B.strval, NULL);
-
-/* AST_ArithmeticExpressionNode *returnString = New_AST_AR_EXP_ConstOperandNode(z); */
-AST_ReturnElementNode *a2 = New_AST_ReturnElementNode(returnString, 0);
-  Vector *b2 = NewVector(AST_ReturnElementNode*, 1);
-  Vector_Push(b2, a2);
-AST_ReturnNode *returnnode = New_AST_ReturnNode(b2, 0);
-
-// build the order node
-  Vector *b3 = NewVector(AST_ColumnNode*, 1);
-// arg 1 is alias (necessary), 2 is property (optional).
-  Vector_Push(b3, New_AST_ColumnNode(B.strval, C.strval, N_VARIABLE));
-AST_OrderNode *ordernode = New_AST_OrderNode(b3, ORDER_DIR_ASC);
-
-A = New_AST_QueryExpressionNode(matchnode, NULL, NULL, NULL, NULL, returnnode, ordernode, NULL);
+A = Allocate_AST_Query();
+A->indexOp = createIndexOp(B, C);
+A->type = T_INDEX;
 }
 /*
 expr(A) ::= CREATE INDEX ON label(B) target(C). {
@@ -518,7 +509,7 @@ value(A) ::= FALSE. { A = SI_BoolVal(0); }
   	extern char *yytext;
 	extern int yycolumn;
 
-	AST_QueryExpressionNode *Query_Parse(const char *q, size_t len, char **err) {
+	AST_Query* Query_Parse(const char *q, size_t len, char **err) {
 		yycolumn = 1;	// Reset lexer's token tracking position
 		yy_scan_bytes(q, len);
   		void* pParser = ParseAlloc(malloc);

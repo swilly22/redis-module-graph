@@ -149,6 +149,13 @@ AST_MatchNode* New_AST_MatchNode(Vector *elements) {
 	return matchNode;
 }
 
+AST_IndexOp* createIndexOp(char *label, char *property) {
+  AST_IndexOp *indexOp = malloc(sizeof(AST_IndexOp));
+  indexOp->label = label;
+  indexOp->property = property;
+  return indexOp;
+}
+
 void Free_AST_MatchNode(AST_MatchNode *matchNode) {
 	for(int i = 0; i < Vector_Size(matchNode->graphEntities); i++) {
 		GraphEntity *ge;
@@ -229,7 +236,7 @@ void Free_AST_ReturnNode(AST_ReturnNode *returnNode) {
 }
 
 AST_ReturnElementNode* New_AST_ReturnElementNode(AST_ArithmeticExpressionNode *exp, const char* alias) {
-	AST_ReturnElementNode *returnElementNode = (AST_ReturnElementNode*)malloc(sizeof(AST_ReturnElementNode));
+	AST_ReturnElementNode *returnElementNode = malloc(sizeof(AST_ReturnElementNode));
 	returnElementNode->exp = exp;
 	returnElementNode->alias = NULL;
 
@@ -250,11 +257,19 @@ void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 	}
 }
 
+AST_Query* Allocate_AST_Query() {
+  AST_Query *query = malloc(sizeof(AST_Query));
+  query->ast = NULL;
+  query->type = T_UNSET;
+
+  return query;
+}
+
 AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
-												     AST_CreateNode *createNode, AST_SetNode *setNode,
+													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
 													 AST_OrderNode *orderNode, AST_LimitNode *limitNode) {
-	AST_QueryExpressionNode *queryExpressionNode = (AST_QueryExpressionNode*)malloc(sizeof(AST_QueryExpressionNode));
+	AST_QueryExpressionNode *queryExpressionNode = malloc(sizeof(AST_QueryExpressionNode));
 	
 	queryExpressionNode->matchNode = matchNode;
 	queryExpressionNode->whereNode = whereNode;
