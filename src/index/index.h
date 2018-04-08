@@ -9,6 +9,12 @@
 #include "../parser/ast.h"
 #include "../graph/node.h"
 
+// TODO Not a terribly helpful solution
+typedef struct {
+  IndexTarget target;
+  skiplist *sl;
+} IndexSL;
+
 // Routines that will be attached to the skiplist object
 int compareNodes(const void *p1, const void *p2);
 int compareSI(void *p1, void *p2, void *ctx);
