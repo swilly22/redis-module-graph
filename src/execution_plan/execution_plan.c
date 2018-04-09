@@ -382,8 +382,14 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             OpNode *scan_op;
             if(node->label) {
                 /* TODO: when indexing is enabled, use index when possible. */
+              IndexSL *nodeIndex = findIndex(node->label, NULL);
+              if (nodeIndex) {
+                scan_op = NewOpNode(NewIndexScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
+                                    graph_name, node->label, nodeIndex->sl));
+              } else {
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
+              }
             } else {
                 /* Node is not labeled, no other option but a full scan. */
                 scan_op = NewOpNode(NewAllNodeScanOp(ctx, graph, Graph_GetNodeRef(graph, node),

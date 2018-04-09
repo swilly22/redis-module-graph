@@ -39,15 +39,19 @@ void freeVal(void *p1) {
   free(p1);
 }
 
-skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *indexOp) {
+IndexSL* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *indexOp) {
   const char *label = indexOp->target.label;
   const char *index_prop = indexOp->target.property;
+
+  IndexSL *index = malloc(sizeof(IndexSL));
+  index->target.label = strdup(label);
+  index->target.property = strdup(index_prop);
+
+  index->sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
 
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, label);
 
   LabelStoreIterator *it_test = LabelStore_Search(store, "");
-
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
 
   char *nodeId;
   tm_len_t nodeIdLen;
@@ -77,31 +81,24 @@ skiplist* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNod
           continue;
         }
 
-        skiplistInsert(sl, key, node);
+        skiplistInsert(index->sl, key, node);
         break;
       }
     }
   }
 
-  /*
-  skiplistIterator iter = skiplistIterateAll(sl);
-  while ((node = skiplistIterator_Next(&iter)) != NULL) {
-    printf("LABEL: %s\n", node->label);
-    for (int i = 0; i < node->prop_count; i ++) {
-      prop = node->properties + i;
-      printf("PROP: %s\t:", prop->name);
-      SIValue_Print(stdout, &prop->value);
-      printf("\n");
-    }
-  }
-  */
-
-  return sl;
+  return index;
 }
 
-skiplist* findIndex(RedisModuleCtx *ctx, const char *graphName, IndexTarget *target) {
-  // TODO Somewhere indices need to be stored, and can then be looked up by label-property pairs
-  // IndexStore?
+IndexSL* findIndex(const char *label, const char *property) {
+  if (!tmp_index_store) return NULL;
 
+  IndexSL *index_to_check;
+  for (int q = 0; q < Vector_Size(tmp_index_store); q ++) {
+    Vector_Get(tmp_index_store, q, &index_to_check);
+    if (!strcmp(index_to_check->target.label, label)) {
+      return index_to_check;
+    }
+  }
   return NULL;
 }

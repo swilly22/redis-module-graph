@@ -37,6 +37,7 @@
 #include "execution_plan/execution_plan.h"
 
 #include "index/index.h"
+#include "index/index_type.h"
 
 /* Removes given graph.
  * Args:
@@ -141,7 +142,13 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     if (query->type == AST_INDEX) {
       if (query->indexOp->operation == CREATE_INDEX) {
-        createIndex(ctx, graphName, query->indexOp);
+        IndexSL *index = createIndex(ctx, graphName, query->indexOp);
+        if (!tmp_index_store) {
+          tmp_index_store = NewVector(IndexSL*, 1);
+        }
+        Vector_Push(tmp_index_store, index);
+        // IndexSL *index2;
+        // Vector_Get(tmp_index_store, 0, &index2);
       } else {
         errMsg = "Redis-Graph only supports index creation operations at present.\n";
         RedisModule_ReplyWithError(ctx, errMsg);
@@ -284,6 +291,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if(RedisModule_CreateCommand(ctx, "graph.EXPLAIN", MGraph_Explain, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
+
+    tmp_index_store = NULL;
 
     return REDISMODULE_OK;
 }
