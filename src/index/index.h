@@ -20,14 +20,10 @@ Vector *tmp_index_store;
 typedef struct {
   IndexTarget target;
   skiplist *sl;
-} IndexSL;
+} Index;
 
-// Routines that will be attached to the skiplist object
-int compareNodes(const void *p1, const void *p2);
-int compareSI(void *p1, void *p2, void *ctx);
-void freeVal(void *p1);
-
-IndexSL* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *ast);
-IndexSL* findIndex(const char *label, const char *property);
+Index* createIndex(const char *label, const char *property);
+void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexOpNode *indexOp);
+Index* findIndex(const char *label, const char *property);
 
 #endif

@@ -8,22 +8,17 @@ void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
     return NULL;
   }
 
-  IndexSL *index = malloc(sizeof(IndexSL));
-  char *strbuf = NULL;
-  strbuf = RedisModule_LoadStringBuffer(rdb, NULL);
-  index->target.label = strdup(strbuf);
-  strbuf = RedisModule_LoadStringBuffer(rdb, NULL);
-  index->target.property = strdup(strbuf);
+  const char *label = RedisModule_LoadStringBuffer(rdb, NULL);
+  const char *property = RedisModule_LoadStringBuffer(rdb, NULL);
+  Index *index = createIndex(label, property);
 
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
-
-  loadSkiplist(rdb, sl);
+  loadSkiplist(rdb, index->sl);
 
   return index;
 }
 
 void IndexType_RdbSave(RedisModuleIO *rdb, void *value) {
-  IndexSL *index = value;
+  Index *index = value;
   
   serializeIndex(rdb, index);
 }
@@ -33,7 +28,7 @@ void IndexType_AofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *valu
 }
 
 void IndexType_Free(void *value) {
-  IndexSL *index = value;
+  Index *index = value;
   // free
 }
 
@@ -124,7 +119,7 @@ void serializeSkiplist(RedisModuleIO *rdb, skiplist *sl) {
   }
 }
 
-void serializeIndex(RedisModuleIO *rdb, IndexSL *index) {
+void serializeIndex(RedisModuleIO *rdb, Index *index) {
   RedisModule_SaveStringBuffer(rdb, index->target.label, strlen(index->target.label) + 1);
   RedisModule_SaveStringBuffer(rdb, index->target.property, strlen(index->target.property) + 1);
 

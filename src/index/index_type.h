@@ -18,7 +18,7 @@ SIValue loadSIValue(RedisModuleIO *rdb);
 void loadSkiplist(RedisModuleIO *rdb, skiplist *sl);
 void saveSIValue(RedisModuleIO *rdb, SIValue *val);
 
-void serializeIndex(RedisModuleIO *rdb, IndexSL *index);
+void serializeIndex(RedisModuleIO *rdb, Index *index);
 void serializeSkiplist(RedisModuleIO *rdb, skiplist *sl);
 void serializeSkiplistNode(RedisModuleIO *rdb, skiplistNode *sl_node);
 

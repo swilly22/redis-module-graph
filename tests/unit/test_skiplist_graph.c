@@ -12,8 +12,44 @@ char *words[] = {"foo",  "bar",     "zap",    "pomo",
 const char *node_label = "default_label";
 char *prop_key = "default_prop_key";
 
+// Skiplist comparator functions
+int testCompareNodes(const void *p1, const void *p2) {
+  Node *a = (Node *)p1;
+  Node *b = (Node *)p2;
+
+  if (a->id > b->id) {
+    return 1;
+  } else if (a->id < b->id) {
+    return -1;
+  } else {
+    return 0;
+  }
+}
+
+int TestCompareSI(void *p1, void *p2, void *ctx) {
+  SIValue *a = p1, *b = p2;
+
+  if (a->type & b->type & T_STRING) {
+    return strcmp(a->stringval, b->stringval);
+  } else if ((a->type & SI_NUMERIC) && (b->type & SI_NUMERIC)) {
+
+    if (a->doubleval > b->doubleval) {
+      return 1;
+    } else if (a->doubleval < b->doubleval) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+
+  // We can only compare string and numeric SIValues, so this point
+  // should be unreachable for a properly constructed index.
+
+  return 0;
+}
+
 skiplist* build_skiplist(void) {
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
+  skiplist *sl = skiplistCreate(TestCompareSI, NULL, testCompareNodes, NULL);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -42,7 +78,7 @@ skiplistNode* update_skiplist(skiplist *sl, void *val, void *old_key, void *new_
 }
 
 void test_skiplist_range(void) {
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
+  skiplist *sl = skiplistCreate(TestCompareSI, NULL, testCompareNodes, NULL);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -137,7 +173,7 @@ void test_skiplist_update(void) {
   search_result = skiplistFind(sl, new_prop);
   if (search_result) {
     for (int i = 0; i < search_result->numVals; i ++) {
-      if (compareNodes(search_result->vals[i], node_to_update) == 0) {
+      if (testCompareNodes(search_result->vals[i], node_to_update) == 0) {
         found_index = i;
         break;
       }

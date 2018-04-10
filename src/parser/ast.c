@@ -151,8 +151,8 @@ AST_MatchNode* New_AST_MatchNode(Vector *elements) {
 
 AST_IndexOpNode* AST_IndexOp(const char *label, const char *property) {
   AST_IndexOpNode *indexOp = malloc(sizeof(AST_IndexOpNode));
-  IndexTarget t  = {.label = label, .property = property};
-  indexOp->target = t;
+  indexOp->target.label = label;
+  indexOp->target.property = property;
   return indexOp;
 }
 

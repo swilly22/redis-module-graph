@@ -142,13 +142,12 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     if (query->type == AST_INDEX) {
       if (query->indexOp->operation == CREATE_INDEX) {
-        IndexSL *index = createIndex(ctx, graphName, query->indexOp);
+        Index *index = createIndex(query->indexOp->target.label, query->indexOp->target.property);
+        populateIndex(ctx, index, graphName, query->indexOp);
         if (!tmp_index_store) {
-          tmp_index_store = NewVector(IndexSL*, 1);
+          tmp_index_store = NewVector(Index*, 1);
         }
         Vector_Push(tmp_index_store, index);
-        // IndexSL *index2;
-        // Vector_Get(tmp_index_store, 0, &index2);
       } else {
         errMsg = "Redis-Graph only supports index creation operations at present.\n";
         RedisModule_ReplyWithError(ctx, errMsg);

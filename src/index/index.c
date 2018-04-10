@@ -35,23 +35,10 @@ int compareSI(void *p1, void *p2, void *ctx) {
   return 0;
 }
 
-void freeVal(void *p1) {
-  free(p1);
-}
+void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexOpNode *indexOp) {
+  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
 
-IndexSL* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode *indexOp) {
-  const char *label = indexOp->target.label;
-  const char *index_prop = indexOp->target.property;
-
-  IndexSL *index = malloc(sizeof(IndexSL));
-  index->target.label = strdup(label);
-  index->target.property = strdup(index_prop);
-
-  index->sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
-
-  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, label);
-
-  LabelStoreIterator *it_test = LabelStore_Search(store, "");
+  LabelStoreIterator *it = LabelStore_Search(store, "");
 
   char *nodeId;
   tm_len_t nodeIdLen;
@@ -61,11 +48,11 @@ IndexSL* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode
   SIType lastKeyType = SI_NUMERIC | T_STRING;
   SIType xor;
 
-  while(LabelStoreIterator_Next(it_test, &nodeId, &nodeIdLen, (void**)&node)) {
+  while(LabelStoreIterator_Next(it, &nodeId, &nodeIdLen, (void**)&node)) {
     for (int i = 0; i < node->prop_count; i ++) {
       prop = node->properties + i;
 
-      if (!strcmp(index_prop, prop->name)) {
+      if (!strcmp(index->target.property, prop->name)) {
         SIValue *key = malloc(sizeof(SIValue));
         *key = SI_Clone(prop->value);
 
@@ -86,14 +73,22 @@ IndexSL* createIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexOpNode
       }
     }
   }
+}
+
+Index* createIndex(const char *label, const char *property) {
+  Index *index = malloc(sizeof(Index));
+  index->target.label = strdup(label);
+  index->target.property = strdup(property);
+
+  index->sl = skiplistCreate(compareSI, NULL, compareNodes, NULL);
 
   return index;
 }
 
-IndexSL* findIndex(const char *label, const char *property) {
+Index* findIndex(const char *label, const char *property) {
   if (!tmp_index_store) return NULL;
 
-  IndexSL *index_to_check;
+  Index *index_to_check;
   for (int q = 0; q < Vector_Size(tmp_index_store); q ++) {
     Vector_Get(tmp_index_store, q, &index_to_check);
     if (!strcmp(index_to_check->target.label, label)) {
