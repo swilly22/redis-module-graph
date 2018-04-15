@@ -35,21 +35,24 @@ int yycolumn = 1;
 "ASC"       { return ASC; }
 "DESC"      { return DESC; }
 "LIMIT"     { return LIMIT; }
+"INDEX"     { return INDEX; }
+"ON"        { return ON; }
+"DROP"      { return DROP; }
 
 
 [0-9]*\.[0-9]+    {
 	tok.dval = atof(yytext);
-	return FLOAT; 
+	return FLOAT;
 }
 
 [0-9]+    {
-  tok.intval = atoi(yytext); 
+  tok.intval = atoi(yytext);
   return INTEGER;
 }
 
 [_A-Za-z][A-Za-z0-9_-]* {
   	tok.strval = strdup(yytext);
-  	return UQSTRING; // Unqueoted string, used for entity alias, prop name and labels.
+  	return UQSTRING; // Unquoted string, used for entity alias, prop name and labels.
 }
 
 (\"(\\.|[^\"])*\")|('(\\.|[^'])*')    {
@@ -70,7 +73,7 @@ int yycolumn = 1;
 "<=" 	{ return LE; }
 "->"	{ return RIGHT_ARROW; }
 "<-"	{ return LEFT_ARROW; }
-"!="  {  return NE; }
+"!="	{ return NE; }
 "=" 	{ return EQ; }
 ">" 	{ return GT; }
 "<" 	{ return LT; }

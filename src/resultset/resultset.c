@@ -52,7 +52,7 @@ void Column_Free(Column* column) {
     free(column);
 }
 
-ResultSetHeader* NewResultSetHeader(const AST_QueryExpressionNode *ast) {
+ResultSetHeader* NewResultSetHeader(const AST_Query *ast) {
     ResultSetHeader* header = malloc(sizeof(ResultSetHeader));
     header->columns_len = 0;
     header->orderby_len = 0;
@@ -166,7 +166,7 @@ void ResultSetHeader_Free(ResultSetHeader* header) {
     free(header);
 }
 
-ResultSet* NewResultSet(AST_QueryExpressionNode* ast) {
+ResultSet* NewResultSet(AST_Query* ast) {
     ResultSet* set = (ResultSet*)malloc(sizeof(ResultSet));
     set->ast = ast;
     set->heap = NULL;

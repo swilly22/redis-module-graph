@@ -193,7 +193,7 @@ int _ExecutionPlan_EstimateNodeCardinality(RedisModuleCtx *ctx, const char *grap
 /* Locates expand all operations which do not have a child operation,
  * And adds a scan operation as a new child. */
 void _ExecutionPlan_OptimizeEntryPoints(RedisModuleCtx *ctx, Graph *g, const char *graph_name,
-                                        AST_QueryExpressionNode *ast, OpNode *root) {
+                                        AST_Query *ast, OpNode *root) {
     /* We've reached a leaf. */
     if(root->childCount == 0 && root->operation->type == OPType_EXPAND_ALL) {
         Node **src = ((ExpandAll*)(root->operation))->src_node;
@@ -298,7 +298,7 @@ void _Count_Graph_Entities(const Vector *entities, size_t *node_count, size_t *e
     }
 }
 
-void _Determine_Graph_Size(const AST_QueryExpressionNode *ast, size_t *node_count, size_t *edge_count) {
+void _Determine_Graph_Size(const AST_Query *ast, size_t *node_count, size_t *edge_count) {
     *edge_count = 0;
     *node_count = 0;
     Vector *entities;
@@ -314,7 +314,7 @@ void _Determine_Graph_Size(const AST_QueryExpressionNode *ast, size_t *node_coun
     }
 }
 
-ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST_QueryExpressionNode *ast) {
+ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST_Query *ast) {
     /* Predetermine graph size: (entities in both MATCH and CREATE clauses)
      * have graph object maintain an entity capacity, to avoid reallocs,
      * problem was reallocs done by CREATE clause, which invalidated old refrences in ExpandAll. */
@@ -382,8 +382,14 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             OpNode *scan_op;
             if(node->label) {
                 /* TODO: when indexing is enabled, use index when possible. */
+              Index *nodeIndex = findIndex(node->label, NULL);
+              if (nodeIndex) {
+                scan_op = NewOpNode(NewIndexScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
+                                    graph_name, node->label, nodeIndex->sl));
+              } else {
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
+              }
             } else {
                 /* Node is not labeled, no other option but a full scan. */
                 scan_op = NewOpNode(NewAllNodeScanOp(ctx, graph, Graph_GetNodeRef(graph, node),

@@ -6,6 +6,8 @@
 #include "../resultset/resultset.h"
 #include "../filter_tree/filter_tree.h"
 
+#include "../index/index.h"
+
 /* StreamState
  * Different states in which stream can be at. */
 typedef enum {
@@ -40,7 +42,7 @@ typedef struct {
 } ExecutionPlan;
 
 /* Creates a new execution plan from AST */
-ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph, AST_QueryExpressionNode *ast);
+ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph, AST_Query *ast);
 
 /* Prints execution plan */
 char* ExecutionPlanPrint(const ExecutionPlan *plan);

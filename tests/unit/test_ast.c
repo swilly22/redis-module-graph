@@ -10,7 +10,7 @@ void test_validate_set_clause() {
 
     // Valid query
     char *query = "MATCH (n { name: 'Andres' }) SET n.surname = 'Taylor'";
-    AST_QueryExpressionNode* ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *ast = ParseQuery(query, strlen(query), &errMsg);
     assert(ast != NULL);
     assert(_Validate_SET_Clause(ast, &undefined_alias) == AST_VALID);
 
@@ -37,7 +37,7 @@ void test_validate_delete_clause() {
 
     // Valid query
     char *query = "MATCH (n { name: 'Andres' }) DELETE n";
-    AST_QueryExpressionNode* ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *ast = ParseQuery(query, strlen(query), &errMsg);
     assert(ast != NULL);
     assert(_Validate_DELETE_Clause(ast, &undefined_alias) == AST_VALID);
 
@@ -64,7 +64,7 @@ void test_validate_return_clause() {
 
     // Valid query
     char *query = "MATCH (n { name: 'Andres' }) RETURN n";
-    AST_QueryExpressionNode* ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *ast = ParseQuery(query, strlen(query), &errMsg);
     assert(ast != NULL);
     assert(_Validate_RETURN_Clause(ast, &undefined_alias) == AST_VALID);
 
@@ -101,8 +101,8 @@ void test_validate_return_clause() {
 
 int main(int argc, char **argv) {
     test_validate_set_clause();
-	test_validate_delete_clause();
+    test_validate_delete_clause();
     test_validate_return_clause();
-	printf("test_ast - PASS!\n");
+    printf("test_ast - PASS!\n");
     return 0;
 }

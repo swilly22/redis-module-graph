@@ -4,6 +4,7 @@
 #include "../../src/util/skiplist.h"
 #include "../../src/value.h"
 #include "../../src/graph/node.h"
+#include "../../src/index/index.h"
 
 char *words[] = {"foo",  "bar",     "zap",    "pomo",
                  "pera", "arancio", "limone", NULL};
@@ -11,7 +12,8 @@ char *words[] = {"foo",  "bar",     "zap",    "pomo",
 const char *node_label = "default_label";
 char *prop_key = "default_prop_key";
 
-int compareNodes(const void *p1, const void *p2) {
+// Skiplist comparator functions
+int testCompareNodes(const void *p1, const void *p2) {
   Node *a = (Node *)p1;
   Node *b = (Node *)p2;
 
@@ -24,7 +26,7 @@ int compareNodes(const void *p1, const void *p2) {
   }
 }
 
-int compareSI(void *p1, void *p2, void *ctx) {
+int testCompareSI(void *p1, void *p2, void *ctx) {
   SIValue *a = p1, *b = p2;
 
   if (a->type & b->type & T_STRING) {
@@ -40,19 +42,23 @@ int compareSI(void *p1, void *p2, void *ctx) {
     }
   }
 
-  // We can only compare string and numeric SIValues, so any other type
-  // (such as a pointer or NULL) should error if ever reaching here.
-  assert(0);
+  // We can only compare string and numeric SIValues, so this point
+  // should be unreachable for a properly constructed index.
 
   return 0;
 }
 
-void freeVal(void *p1) {
-  free(p1);
+void testCloneKey(void **property) {
+  SIValue *redirect = *property;
+  *redirect = SI_Clone(*redirect);
+}
+
+void testFreeKey(void *key) {
+  SIValue_Free(key);
 }
 
 skiplist* build_skiplist(void) {
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
+  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -81,7 +87,7 @@ skiplistNode* update_skiplist(skiplist *sl, void *val, void *old_key, void *new_
 }
 
 void test_skiplist_range(void) {
-  skiplist *sl = skiplistCreate(compareSI, NULL, compareNodes, freeVal);
+  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -165,7 +171,7 @@ void test_skiplist_update(void) {
   skiplistNode *new_skiplist_node = update_skiplist(sl, node_to_update, &old_prop, new_prop);
 
   // The new skiplistNode should have the new key
-  assert(!strcmp(((SIValue *)new_skiplist_node->obj)->stringval, "updated_val"));
+  assert(!strcmp(((SIValue *)new_skiplist_node->key)->stringval, "updated_val"));
 
   // The old key-value pair must have been deleted
   int delete_result = skiplistDelete(sl, & old_prop, node_to_update);
@@ -176,7 +182,7 @@ void test_skiplist_update(void) {
   search_result = skiplistFind(sl, new_prop);
   if (search_result) {
     for (int i = 0; i < search_result->numVals; i ++) {
-      if (compareNodes(search_result->vals[i], node_to_update) == 0) {
+      if (testCompareNodes(search_result->vals[i], node_to_update) == 0) {
         found_index = i;
         break;
       }

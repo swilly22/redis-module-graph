@@ -36,6 +36,9 @@
 
 #include "execution_plan/execution_plan.h"
 
+#include "index/index.h"
+#include "index/index_type.h"
+
 /* Removes given graph.
  * Args:
  * argv[1] graph name
@@ -121,15 +124,13 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     clock_t end;
 
     const char *graphName;
-    const char *query;
-    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query);
+    const char *query_str;
+    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query_str);
 
     /* Parse query, get AST. */
     char *errMsg = NULL;
 
-    AST_QueryExpressionNode* ast;
-
-    ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *ast = ParseQuery(query_str, strlen(query_str), &errMsg);
 
     if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
@@ -137,7 +138,31 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         free(errMsg);
         return REDISMODULE_OK;
     }
-    
+
+    if (ast->indexNode != NULL) {
+      if (ast->indexNode->operation == CREATE_INDEX) {
+        Index *index = createIndex(ast->indexNode->target.label, ast->indexNode->target.property);
+        populateIndex(ctx, index, graphName, ast->indexNode);
+        if (!tmp_index_store) {
+          tmp_index_store = NewVector(Index*, 1);
+        }
+        Vector_Push(tmp_index_store, index);
+      } else {
+        errMsg = "Redis-Graph only supports index creation operations at present.\n";
+        RedisModule_ReplyWithError(ctx, errMsg);
+        return REDISMODULE_OK;
+      }
+
+      end = clock();
+      double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+      double elapsedMS = elapsed * 1000;
+      char *strElapsed;
+      asprintf(&strElapsed, "Query internal execution time: %f milliseconds", elapsedMS);
+      RedisModule_ReplyWithStringBuffer(ctx, strElapsed, strlen(strElapsed));
+      free(strElapsed);
+      return REDISMODULE_OK;
+    }
+
     char *reason;
     if (Validate_AST(ast, &reason) != AST_VALID) {
         RedisModule_ReplyWithError(ctx, reason);
@@ -192,12 +217,12 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 2) return RedisModule_WrongArity(ctx);
     
     const char *graphName;
-    const char *query;
-    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query);
+    const char *query_str;
+    RMUtil_ParseArgs(argv, argc, 1, "cc", &graphName, &query_str);
 
     /* Parse query, get AST. */
     char *errMsg = NULL;
-    AST_QueryExpressionNode *ast = ParseQuery(query, strlen(query), &errMsg);
+    AST_Query *ast = ParseQuery(query_str, strlen(query_str), &errMsg);
     
     if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
@@ -244,6 +269,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
     }
 
+    if(IndexType_Register(ctx) == REDISMODULE_ERR) {
+        printf("Failed to register indextype\n");
+        return REDISMODULE_ERR;
+    }
+
     if(RedisModule_CreateCommand(ctx, "graph.DELETE", MGraph_DeleteGraph, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
@@ -255,6 +285,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if(RedisModule_CreateCommand(ctx, "graph.EXPLAIN", MGraph_Explain, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
+
+    tmp_index_store = NULL;
 
     return REDISMODULE_OK;
 }

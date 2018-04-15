@@ -30,32 +30,48 @@
 
 %extra_argument { parseCtx *ctx }
 
-%type expr {AST_QueryExpressionNode*}
+%type expr {AST_Query*}
 
 query ::= expr(A). { ctx->root = A; }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D) returnClause(E) orderClause(F) limitClause(G). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
+	A = New_AST_Query(B, C, D, NULL, NULL, E, F, G, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
+	A = New_AST_Query(B, C, D, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) deleteClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
+	A = New_AST_Query(B, C, NULL, NULL, D, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
+	A = New_AST_Query(B, C, NULL, D, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D) returnClause(E) orderClause(F) limitClause(G). {
-	A = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
+	A = New_AST_Query(B, C, NULL, D, NULL, E, F, G, NULL);
 }
 
 expr(A) ::= createClause(B). {
-	A = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
+	A = New_AST_Query(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
+expr(A) ::= CREATE INDEX ON indexLabel(B) indexProp(C) . {
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, CREATE_INDEX));
+}
+
+expr(A) ::= DROP INDEX ON indexLabel(B) indexProp(C) . {
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, DROP_INDEX));
+}
+
+indexLabel(A) ::= COLON UQSTRING(B) . {
+  A = B;
+}
+
+indexProp(A) ::= LEFT_PARENTHESIS UQSTRING(B) RIGHT_PARENTHESIS . {
+  A = B;
 }
 
 %type matchClause { AST_MatchNode* }
@@ -138,7 +154,7 @@ deleteExpression(A) ::= UQSTRING(B). {
 }
 
 deleteExpression(A) ::= deleteExpression(B) COMMA UQSTRING(C). {
-	Vector_Push(B, C.strval);
+  Vector_Push(B, C.strval);
 	A = B;
 }
 
@@ -454,7 +470,7 @@ value(A) ::= FALSE. { A = SI_BoolVal(0); }
   	extern char *yytext;
 	extern int yycolumn;
 
-	AST_QueryExpressionNode *Query_Parse(const char *q, size_t len, char **err) {
+	AST_Query* Query_Parse(const char *q, size_t len, char **err) {
 		yycolumn = 1;	// Reset lexer's token tracking position
 		yy_scan_bytes(q, len);
   		void* pParser = ParseAlloc(malloc);

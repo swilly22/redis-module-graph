@@ -42,6 +42,7 @@ CC_SOURCES += $(wildcard $(SOURCEDIR)/resultset/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/stores/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/util/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/dep/rax/*.c)
+CC_SOURCES += $(wildcard $(SOURCEDIR)/index/*.c)
 
 # Convert all sources to .o files
 CC_OBJECTS = $(patsubst %.c, %.o, $(CC_SOURCES) )

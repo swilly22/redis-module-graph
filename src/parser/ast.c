@@ -149,6 +149,15 @@ AST_MatchNode* New_AST_MatchNode(Vector *elements) {
 	return matchNode;
 }
 
+AST_IndexNode* AST_IndexOp(const char *label, const char *property, AST_IndexOpType optype) {
+  AST_IndexNode *indexOp = malloc(sizeof(AST_IndexNode));
+  indexOp->target.label = label;
+  indexOp->target.property = property;
+  indexOp->operation = optype;
+	AST_Query *query = calloc(1, sizeof(AST_Query));
+  return indexOp;
+}
+
 void Free_AST_MatchNode(AST_MatchNode *matchNode) {
 	for(int i = 0; i < Vector_Size(matchNode->graphEntities); i++) {
 		GraphEntity *ge;
@@ -229,7 +238,7 @@ void Free_AST_ReturnNode(AST_ReturnNode *returnNode) {
 }
 
 AST_ReturnElementNode* New_AST_ReturnElementNode(AST_ArithmeticExpressionNode *exp, const char* alias) {
-	AST_ReturnElementNode *returnElementNode = (AST_ReturnElementNode*)malloc(sizeof(AST_ReturnElementNode));
+	AST_ReturnElementNode *returnElementNode = malloc(sizeof(AST_ReturnElementNode));
 	returnElementNode->exp = exp;
 	returnElementNode->alias = NULL;
 
@@ -250,11 +259,12 @@ void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 	}
 }
 
-AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
-												     AST_CreateNode *createNode, AST_SetNode *setNode,
+AST_Query* New_AST_Query(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
+													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
-													 AST_OrderNode *orderNode, AST_LimitNode *limitNode) {
-	AST_QueryExpressionNode *queryExpressionNode = (AST_QueryExpressionNode*)malloc(sizeof(AST_QueryExpressionNode));
+													 AST_OrderNode *orderNode, AST_LimitNode *limitNode,
+                           AST_IndexNode *indexNode) {
+	AST_Query *queryExpressionNode = malloc(sizeof(AST_Query));
 	
 	queryExpressionNode->matchNode = matchNode;
 	queryExpressionNode->whereNode = whereNode;
@@ -264,11 +274,13 @@ AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, A
 	queryExpressionNode->returnNode = returnNode;
 	queryExpressionNode->orderNode = orderNode;
 	queryExpressionNode->limitNode = limitNode;
+	queryExpressionNode->limitNode = limitNode;
+	queryExpressionNode->indexNode = indexNode;
 
 	return queryExpressionNode;
 }
 
-void Free_AST_QueryExpressionNode(AST_QueryExpressionNode *queryExpressionNode) {
+void Free_AST_Query(AST_Query *queryExpressionNode) {
 	Free_AST_MatchNode(queryExpressionNode->matchNode);
 	Free_AST_CreateNode(queryExpressionNode->createNode);
 	Free_AST_DeleteNode(queryExpressionNode->deleteNode);
@@ -278,19 +290,19 @@ void Free_AST_QueryExpressionNode(AST_QueryExpressionNode *queryExpressionNode) 
 	free(queryExpressionNode);
 }
 
-AST_Validation _Validate_MATCH_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_MATCH_Clause(const AST_Query* ast, char **reason) {
 	return AST_VALID;
 }
 
-AST_Validation _Validate_WHERE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_WHERE_Clause(const AST_Query* ast, char **reason) {
 	return AST_VALID;
 }
 
-AST_Validation _Validate_CREATE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_CREATE_Clause(const AST_Query* ast, char **reason) {
 	return AST_VALID;
 }
 
-AST_Validation _Validate_SET_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_SET_Clause(const AST_Query* ast, char **reason) {
 	char* undefined_alias;
 	
 	if (!ast->setNode) {
@@ -320,7 +332,7 @@ AST_Validation _Validate_SET_Clause(const AST_QueryExpressionNode* ast, char **r
 	return AST_VALID;
 }
 
-AST_Validation _Validate_DELETE_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_DELETE_Clause(const AST_Query* ast, char **reason) {
 	char* undefined_alias;
 
 	if (!ast->deleteNode) {
@@ -340,7 +352,7 @@ AST_Validation _Validate_DELETE_Clause(const AST_QueryExpressionNode* ast, char 
 	return AST_VALID;
 }
 
-AST_Validation _Validate_RETURN_Clause(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation _Validate_RETURN_Clause(const AST_Query* ast, char **reason) {
 	char* undefined_alias;
 
 	if (!ast->returnNode) {
@@ -400,7 +412,7 @@ AST_Validation _Validate_Aliases_In_Match_Clause(const Vector* aliasesToCheck,
 	return AST_VALID;
 }
 
-AST_Validation Validate_AST(const AST_QueryExpressionNode* ast, char **reason) {
+AST_Validation Validate_AST(const AST_Query* ast, char **reason) {
 	/* AST must include either a MATCH or CREATE clause. */
 	if(ast->matchNode == NULL && ast->createNode == NULL) {
 		*reason = "Query must specify either MATCH or CREATE clause.";
