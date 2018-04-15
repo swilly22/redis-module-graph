@@ -26,7 +26,7 @@ int testCompareNodes(const void *p1, const void *p2) {
   }
 }
 
-int TestCompareSI(void *p1, void *p2, void *ctx) {
+int testCompareSI(void *p1, void *p2, void *ctx) {
   SIValue *a = p1, *b = p2;
 
   if (a->type & b->type & T_STRING) {
@@ -48,8 +48,17 @@ int TestCompareSI(void *p1, void *p2, void *ctx) {
   return 0;
 }
 
+void testCloneKey(void **property) {
+  SIValue *redirect = *property;
+  *redirect = SI_Clone(*redirect);
+}
+
+void testFreeKey(void *key) {
+  SIValue_Free(key);
+}
+
 skiplist* build_skiplist(void) {
-  skiplist *sl = skiplistCreate(TestCompareSI, NULL, testCompareNodes, NULL);
+  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -78,7 +87,7 @@ skiplistNode* update_skiplist(skiplist *sl, void *val, void *old_key, void *new_
 }
 
 void test_skiplist_range(void) {
-  skiplist *sl = skiplistCreate(TestCompareSI, NULL, testCompareNodes, NULL);
+  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 

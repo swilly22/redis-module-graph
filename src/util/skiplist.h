@@ -48,12 +48,16 @@ typedef struct skiplistNode {
 
 typedef int (*skiplistCmpFunc)(void *p1, void *p2, void *ctx);
 typedef int (*skiplistValCmpFunc)(const void *p1, const void *p2);
-typedef void (*skiplistFreeKeyFunc)(void *p1);
+
+typedef void (*skiplistCloneKeyFunc)(void **key);
+typedef void (*skiplistFreeKeyFunc)(void *key);
 
 typedef struct skiplist {
   struct skiplistNode *header, *tail;
   skiplistCmpFunc compare;
   skiplistValCmpFunc valcmp;
+
+  skiplistCloneKeyFunc cloneKey;
   skiplistFreeKeyFunc freeKey;
 
   void *cmpCtx;
@@ -61,7 +65,8 @@ typedef struct skiplist {
   int level;
 } skiplist;
 
-skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc vcmp, skiplistFreeKeyFunc freeKey);
+skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc vcmp,
+                         skiplistCloneKeyFunc cloneKey, skiplistFreeKeyFunc freeKey);
 void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *key, void *val);
 int skiplistDelete(skiplist *sl, void *key, void *val);

@@ -45,7 +45,7 @@ int cmpStrVals(const void *a, const void *b) {
 
 // Verify the allocation and deletion properties of the vals array in a skiplistNode
 void test_vals_allocation() {
-  skiplist *sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL);
+  skiplist *sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL, NULL);
   double i;
   for (i = 0; i < 100; i ++) {
     skiplistInsert(sl, "a", &i);
@@ -80,7 +80,7 @@ void test_string_sorts(void) {
   char *vals[] = {"foo val", "bar val", "zap val", "pomo val",
                   "pera val", "arancio val", "limone val", NULL};
 
-  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpStrVals, NULL);
+  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpStrVals, NULL, NULL);
 
   for (int i = 0; words[i] != NULL; i ++) {
     skiplistInsert(string_sl, words[i], vals[i]);
@@ -106,7 +106,7 @@ void test_numeric_sorts(void) {
   // vals are defined as the order the keys should be in after sorting
   double vals[] = {5, 2, 0, 6, 3, 4, 1};
 
-  skiplist *numeric_sl = skiplistCreate(cmpDoubleKeys, NULL, cmpDoubleVals, NULL);
+  skiplist *numeric_sl = skiplistCreate(cmpDoubleKeys, NULL, cmpDoubleVals, NULL, NULL);
 
   for (int i = 0; i < 7; i ++) {
     skiplistInsert(numeric_sl, keys + i, vals + i);
@@ -193,7 +193,7 @@ void test_numeric_sorts(void) {
 
 // Verify that the skiplist iterator passes over all elements (in order)
 void test_sl_iterator(void) {
-  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL);
+  skiplist *string_sl = skiplistCreate(cmpStrKeys, NULL, cmpDoubleVals, NULL, NULL);
   skiplistNode *x;
   double first = 1, second = 2, third = 3;
   skiplistInsert(string_sl, "c_third", &third);

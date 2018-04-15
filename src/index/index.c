@@ -35,6 +35,19 @@ int compareSI(void *p1, void *p2, void *ctx) {
   return 0;
 }
 
+/*
+ * The index must maintain its own copy of the indexed SIValue
+ * so that it becomes outdated but not broken by updates to the property.
+ */
+void cloneKey(void **property) {
+  SIValue *redirect = *property;
+  *redirect = SI_Clone(*redirect);
+}
+
+void freeKey(void *key) {
+  SIValue_Free(key);
+}
+
 void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexNode *indexOp) {
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
 
@@ -53,10 +66,15 @@ void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST
     for (int i = 0; i < node->prop_count; i ++) {
       prop = node->properties + i;
 
-      // TODO find a better solution
+      /*
+       * TODO (INDEX_INEFFICIENCY):
+       * Running strcmp in a loop over all properties is a wasteful
+       * solution to matching index targets, we should make something more efficient.
+       */
+
       if (!strcmp(index->target.property, prop->name)) {
-        SIValue *key = malloc(sizeof(SIValue));
-        *key = SI_Clone(prop->value);
+        // This value will be cloned within the skiplistInsert routine if necessary
+        SIValue *key = &prop->value;
 
         xor = key->type ^ lastKeyType;
         if (!xor) {
@@ -82,7 +100,7 @@ Index* createIndex(const char *label, const char *property) {
   index->target.label = strdup(label);
   index->target.property = strdup(property);
 
-  index->sl = skiplistCreate(compareSI, NULL, compareNodes, NULL);
+  index->sl = skiplistCreate(compareSI, NULL, compareNodes, cloneKey, freeKey);
 
   return index;
 }

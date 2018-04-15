@@ -94,8 +94,8 @@ skiplistNode *skiplistNodeAppendValue(skiplistNode *n, void *val,
  * Create a new skip list with the specified function used in order to
  * compare elements. The function return value is the same as strcmp().
  */
-skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
-                         skiplistValCmpFunc vcmp, skiplistFreeKeyFunc freeKey) {
+skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx, skiplistValCmpFunc vcmp,
+                         skiplistCloneKeyFunc cloneKey, skiplistFreeKeyFunc freeKey) {
   int j;
   skiplist *sl = zmalloc(sizeof(struct skiplist));
   sl->level = 1;
@@ -111,6 +111,7 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
   sl->compare = cmp;
   sl->cmpCtx = cmpCtx;
   sl->valcmp = vcmp;
+  sl->cloneKey = cloneKey;
   sl->freeKey = freeKey;
 
   return sl;
@@ -186,7 +187,14 @@ skiplistNode *skiplistInsert(skiplist *sl, void *key, void *val) {
     }
     sl->level = level;
   }
-  // clone key
+
+  /*
+   * If we have reached this point, the key is not already in the skiplist.
+   * If the skiplist was provided with a cloneKey routine (to duplicate
+   * volatile keys like SIValues), use it; otherwise the skiplistNode key
+   * will be set through pointer assignment.
+   */
+  if (sl->cloneKey) sl->cloneKey(&key);
   x = skiplistCreateNode(level, key, val);
   for (i = 0; i < level; i++) {
     x->level[i].forward = update[i]->level[i].forward;
