@@ -38,17 +38,18 @@ int compareSI(void *p1, void *p2, void *ctx) {
 void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexOpNode *indexOp) {
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
 
-  LabelStoreIterator *it = LabelStore_Search(store, "");
+  LabelStoreIterator it;
+  LabelStore_Scan(store, &it);
 
   char *nodeId;
-  tm_len_t nodeIdLen;
+  uint16_t nodeIdLen;
   Node *node;
   EntityProperty *prop;
 
   SIType lastKeyType = SI_NUMERIC | T_STRING;
   SIType xor;
 
-  while(LabelStoreIterator_Next(it, &nodeId, &nodeIdLen, (void**)&node)) {
+  while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
     for (int i = 0; i < node->prop_count; i ++) {
       prop = node->properties + i;
 

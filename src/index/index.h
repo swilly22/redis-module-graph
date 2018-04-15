@@ -4,10 +4,10 @@
 #include "../redismodule.h"
 #include "../graph/graph_entity.h"
 #include "../stores/store.h"
-#include "../util/triemap/triemap.h"
 #include "../util/skiplist.h"
 #include "../parser/ast.h"
 #include "../graph/node.h"
+#include "../dep/rax/rax.h"
 
 /*
  * TODO at time of index creation, graph does not exist.
