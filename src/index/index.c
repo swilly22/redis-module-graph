@@ -35,7 +35,7 @@ int compareSI(void *p1, void *p2, void *ctx) {
   return 0;
 }
 
-void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexOpNode *indexOp) {
+void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexNode *indexOp) {
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
 
   LabelStoreIterator it;
@@ -53,6 +53,7 @@ void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST
     for (int i = 0; i < node->prop_count; i ++) {
       prop = node->properties + i;
 
+      // TODO find a better solution
       if (!strcmp(index->target.property, prop->name)) {
         SIValue *key = malloc(sizeof(SIValue));
         *key = SI_Clone(prop->value);

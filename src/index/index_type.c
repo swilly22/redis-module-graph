@@ -19,7 +19,7 @@ void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
 
 void IndexType_RdbSave(RedisModuleIO *rdb, void *value) {
   Index *index = value;
-  
+
   serializeIndex(rdb, index);
 }
 

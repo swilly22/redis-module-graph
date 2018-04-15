@@ -52,7 +52,7 @@ OpResult IndexScanReset(OpBase *ctx) {
 
   /* Restore original node. */
   *indexScan->node = indexScan->_node;
-  // TODO hm
+  // TODO Is this what this function should do?
   *indexScan->iter = skiplistIterateAll(indexScan->sl);
 
   return OP_OK;

@@ -16,14 +16,13 @@
  */
 Vector *tmp_index_store;
 
-// TODO Not a terribly helpful solution
 typedef struct {
   IndexTarget target;
   skiplist *sl;
 } Index;
 
 Index* createIndex(const char *label, const char *property);
-void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexOpNode *indexOp);
+void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexNode *indexOp);
 Index* findIndex(const char *label, const char *property);
 
 #endif

@@ -139,10 +139,10 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    if (query->type == AST_INDEX) {
-      if (query->indexOp->operation == CREATE_INDEX) {
-        Index *index = createIndex(query->indexOp->target.label, query->indexOp->target.property);
-        populateIndex(ctx, index, graphName, query->indexOp);
+    if (ast->indexNode != NULL) {
+      if (ast->indexNode->operation == CREATE_INDEX) {
+        Index *index = createIndex(ast->indexNode->target.label, ast->indexNode->target.property);
+        populateIndex(ctx, index, graphName, ast->indexNode);
         if (!tmp_index_store) {
           tmp_index_store = NewVector(Index*, 1);
         }
