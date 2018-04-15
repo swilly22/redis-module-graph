@@ -245,7 +245,7 @@ AST_ColumnNode* AST_ColumnNodeFromVariable(const AST_Variable *variable);
 AST_ColumnNode* AST_ColumnNodeFromAlias(const char *alias);
 AST_Variable* New_AST_Variable(const char *alias, const char *property);
 AST_LimitNode* New_AST_LimitNode(int limit);
-AST_QueryExpressionNode* New_AST_QueryExpressionNode(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
+AST_Query* New_AST_Query(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
 													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
 													 AST_OrderNode *orderNode, AST_LimitNode *limitNode);
@@ -256,16 +256,16 @@ AST_IndexOpNode* AST_IndexOp(const char *label, const char *property);
 AST_Query* Allocate_AST_Query();
 
 /* AST Validations */
-AST_Validation _Validate_MATCH_Clause(const AST_QueryExpressionNode* ast, char **reason);
-AST_Validation _Validate_WHERE_Clause(const AST_QueryExpressionNode* ast, char **reason);
-AST_Validation _Validate_CREATE_Clause(const AST_QueryExpressionNode* ast, char **reason);
-AST_Validation _Validate_SET_Clause(const AST_QueryExpressionNode* ast, char **reason);
-AST_Validation _Validate_DELETE_Clause(const AST_QueryExpressionNode* ast, char **reason);
-AST_Validation _Validate_RETURN_Clause(const AST_QueryExpressionNode* ast, char **reason);
+AST_Validation _Validate_MATCH_Clause(const AST_Query* ast, char **reason);
+AST_Validation _Validate_WHERE_Clause(const AST_Query* ast, char **reason);
+AST_Validation _Validate_CREATE_Clause(const AST_Query* ast, char **reason);
+AST_Validation _Validate_SET_Clause(const AST_Query* ast, char **reason);
+AST_Validation _Validate_DELETE_Clause(const AST_Query* ast, char **reason);
+AST_Validation _Validate_RETURN_Clause(const AST_Query* ast, char **reason);
 AST_Validation _Validate_Aliases_In_Match_Clause(const Vector* aliasesToCheck, 
 												 const Vector* elementsToCheckAgainst, 
 												 char** undefined_alias);
-AST_Validation Validate_AST(const AST_QueryExpressionNode* ast, char **reason);
+AST_Validation Validate_AST(const AST_Query* ast, char **reason);
 
 void Free_AST_Variable(AST_Variable *v);
 void Free_AST_ColumnNode(AST_ColumnNode *node);
@@ -280,6 +280,6 @@ void Free_AST_LimitNode(AST_LimitNode *limitNode);
 void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode);
 void Free_AST_ArithmeticExpressionNode(AST_ArithmeticExpressionNode *arExpNode);
 void Free_AST_GraphEntity(AST_GraphEntity *entity);
-void Free_AST_QueryExpressionNode(AST_QueryExpressionNode *queryExpressionNode);
+void Free_AST_Query(AST_Query *queryExpressionNode);
 void _Get_All_Aliases_From_Expression(const AST_ArithmeticExpressionNode *exp, Vector *aliases);
 #endif

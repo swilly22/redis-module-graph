@@ -130,9 +130,7 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     /* Parse query, get AST. */
     char *errMsg = NULL;
 
-    AST_Query *query = ParseQuery(query_str, strlen(query_str), &errMsg);
-
-    AST_QueryExpressionNode* ast = query->ast;
+    AST_Query *ast = ParseQuery(query_str, strlen(query_str), &errMsg);
 
     if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
@@ -224,19 +222,15 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     /* Parse query, get AST. */
     char *errMsg = NULL;
-    AST_Query *query = ParseQuery(query_str, strlen(query_str), &errMsg);
+    AST_Query *ast = ParseQuery(query_str, strlen(query_str), &errMsg);
     
-    if (!query->ast) {
+    if (!ast) {
         RedisModule_Log(ctx, "debug", "Error parsing query: %s", errMsg);
         RedisModule_ReplyWithError(ctx, errMsg);
         free(errMsg);
         return REDISMODULE_OK;
-    } else if (query->type == AST_INDEX) {
-      // Describe index execution
     }
     
-    AST_QueryExpressionNode *ast = query->ast;
-
     /* Modify AST */
     if(ReturnClause_ContainsCollapsedNodes(ast) == 1) {
         /* Expand collapsed nodes. */

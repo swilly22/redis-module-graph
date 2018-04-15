@@ -107,7 +107,7 @@ void Build_None_Aggregated_Arithmetic_Expressions(AST_ReturnNode *return_node, A
     }
 }
 
-int ReturnClause_ContainsCollapsedNodes(AST_QueryExpressionNode *ast) {
+int ReturnClause_ContainsCollapsedNodes(AST_Query *ast) {
     if(!ast->returnNode) return 0;
 
     AST_ReturnNode *return_node = ast->returnNode;
@@ -150,7 +150,7 @@ int _ContainsAggregation(AST_ArithmeticExpressionNode *exp) {
 }
 
 /* Checks if return clause uses aggregation. */
-int ReturnClause_ContainsAggregation(AST_QueryExpressionNode *ast) {
+int ReturnClause_ContainsAggregation(AST_Query *ast) {
     if(!ast->returnNode) return 0;
 
     AST_ReturnNode *return_node = ast->returnNode;
@@ -167,7 +167,7 @@ int ReturnClause_ContainsAggregation(AST_QueryExpressionNode *ast) {
     return 0;
 }
 
-void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_QueryExpressionNode *ast, const char *graphName) {
+void ReturnClause_ExpandCollapsedNodes(RedisModuleCtx *ctx, AST_Query *ast, const char *graphName) {
      /* Create a new return clause */
     Vector *expandReturnElements = NewVector(AST_ReturnElementNode*, Vector_Size(ast->returnNode->returnElements));
 
@@ -301,7 +301,7 @@ void _nameAnonymousNodes(Vector *entities, int *entity_id) {
     }
 }
 
-void nameAnonymousNodes(AST_QueryExpressionNode *ast) {
+void nameAnonymousNodes(AST_Query *ast) {
     int entity_id = 0;
 
     if(ast->matchNode)
@@ -311,7 +311,7 @@ void nameAnonymousNodes(AST_QueryExpressionNode *ast) {
         _nameAnonymousNodes(ast->createNode->graphEntities, &entity_id);
 }
 
-void inlineProperties(AST_QueryExpressionNode *ast) {
+void inlineProperties(AST_Query *ast) {
     /* Migrate inline filters to WHERE clause. */
     if(!ast->matchNode) return;
     Vector *entities = ast->matchNode->graphEntities;
@@ -352,25 +352,25 @@ void inlineProperties(AST_QueryExpressionNode *ast) {
     }
 }
 
-int Query_Modifies_KeySpace(const AST_QueryExpressionNode *ast) {
+int Query_Modifies_KeySpace(const AST_Query *ast) {
     return (ast->createNode != NULL || ast->deleteNode != NULL);
 }
 
 AST_Query* ParseQuery(const char *query_str, size_t qLen, char **errMsg) {
-    AST_Query *query = Query_Parse(query_str, qLen, errMsg);
+    AST_Query *ast = Query_Parse(query_str, qLen, errMsg);
     
-    if (query->type == AST_INDEX) {
-      return query;
-    }
-
-    AST_QueryExpressionNode *ast = query->ast;
     if (!ast) {
         return NULL;
+    }
+
+    // CREATE and DROP index ops don't require the below steps
+    if (ast->indexNode != NULL) {
+      return ast;
     }
 
     /* Modify AST. */
     nameAnonymousNodes(ast);
     inlineProperties(ast);
 
-    return query;
+    return ast;
 }
