@@ -91,9 +91,9 @@ SIValue loadSIValue(RedisModuleIO *rdb) {
 
 void serializeSkiplistNode(RedisModuleIO *rdb, skiplistNode *sl_node) {
   // Elem 1: SIValue key
-  saveSIValue(rdb, sl_node->obj);
+  saveSIValue(rdb, sl_node->key);
 
-  // Elem 2: obj (Node) count
+  // Elem 2: value (Node) count
   RedisModule_SaveUnsigned(rdb, (uint64_t)sl_node->numVals);
 
   // Elem 3-x: buffer of Node IDs
@@ -112,7 +112,7 @@ void serializeSkiplist(RedisModuleIO *rdb, skiplist *sl) {
 
   skiplistNode *node = sl->header->level[0].forward;
   while (node) {
-    // Need to serialize key-obj pairs; levels don't matter (and should in fact be restructured on skiplist load)
+    // Need to serialize key-val pairs; levels don't matter (and should in fact be restructured on skiplist load)
     serializeSkiplistNode(rdb, node);
     // Could free each node at this point
     node = node->level[0].forward;
@@ -131,7 +131,7 @@ void loadSkiplist(RedisModuleIO *rdb, skiplist *sl) {
   uint64_t node_num_vals;
 
   for (int i = 0; i < sl_len; i ++) {
-    // Loop over key-obj pairs
+    // Loop over key-val pairs
     SIValue key = loadSIValue(rdb);
 
     node_num_vals = RedisModule_LoadUnsigned(rdb);

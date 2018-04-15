@@ -148,7 +148,7 @@ void test_numeric_sorts(void) {
   // Retrieve the first node greater than an arbitrary number
   double threshold = 0.5;
   ret = skiplistFindAtLeast(numeric_sl, &threshold, 1);
-  assert (*(double*)ret->obj == 1);
+  assert (*(double*)ret->key == 1);
 
   // Iterate over a range of keys (-INF, 0]
   double key_val = 0;

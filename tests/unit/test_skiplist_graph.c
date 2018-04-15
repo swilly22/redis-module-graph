@@ -162,7 +162,7 @@ void test_skiplist_update(void) {
   skiplistNode *new_skiplist_node = update_skiplist(sl, node_to_update, &old_prop, new_prop);
 
   // The new skiplistNode should have the new key
-  assert(!strcmp(((SIValue *)new_skiplist_node->obj)->stringval, "updated_val"));
+  assert(!strcmp(((SIValue *)new_skiplist_node->key)->stringval, "updated_val"));
 
   // The old key-value pair must have been deleted
   int delete_result = skiplistDelete(sl, & old_prop, node_to_update);
