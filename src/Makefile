@@ -41,6 +41,7 @@ CC_SOURCES += $(SOURCEDIR)/parser/grammar.c
 CC_SOURCES += $(wildcard $(SOURCEDIR)/resultset/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/stores/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/util/*.c)
+CC_SOURCES += $(wildcard $(SOURCEDIR)/dep/rax/*.c)
 CC_SOURCES += $(wildcard $(SOURCEDIR)/index/*.c)
 
 # Convert all sources to .o files
@@ -53,10 +54,9 @@ CC_DEPS = $(patsubst %.c, %.d, $(CC_SOURCES) )
 
 # Library dependencies
 LIBRMUTIL=rmutil/librmutil.a
-LIBTRIEMAP=util/triemap/libtriemap.a
 
 # Compilation deps for the module
-LIBS=$(LIBTRIEMAP) $(LIBRMUTIL)
+LIBS=$(LIBRMUTIL)
 MODULE=$(CC_OBJECTS) $(LIBS)
 
 %.c: %.y
@@ -76,11 +76,7 @@ $(LIBRMUTIL):
 	$(MAKE) -C rmutil
 .PHONY: $(LIBRMUTIL)
 
-$(LIBTRIEMAP):
-	$(MAKE) -C util/triemap
-.PHONY: $(LIBTRIEMAP)
-
-# Compile query parse.
+# Compile query parse. 
 # This is not included in the usual make target!
 parser:
 	$(MAKE) -C $@
