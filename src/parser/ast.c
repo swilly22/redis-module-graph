@@ -149,10 +149,12 @@ AST_MatchNode* New_AST_MatchNode(Vector *elements) {
 	return matchNode;
 }
 
-AST_IndexOpNode* AST_IndexOp(const char *label, const char *property) {
-  AST_IndexOpNode *indexOp = malloc(sizeof(AST_IndexOpNode));
+AST_IndexNode* AST_IndexOp(const char *label, const char *property, AST_IndexOpType optype) {
+  AST_IndexNode *indexOp = malloc(sizeof(AST_IndexNode));
   indexOp->target.label = label;
   indexOp->target.property = property;
+  indexOp->operation = optype;
+	AST_Query *query = calloc(1, sizeof(AST_Query));
   return indexOp;
 }
 
@@ -260,8 +262,9 @@ void Free_AST_ReturnElementNode(AST_ReturnElementNode *returnElementNode) {
 AST_Query* New_AST_Query(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
 													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
-													 AST_OrderNode *orderNode, AST_LimitNode *limitNode) {
-	AST_QueryExpressionNode *queryExpressionNode = malloc(sizeof(AST_QueryExpressionNode));
+													 AST_OrderNode *orderNode, AST_LimitNode *limitNode,
+                           AST_IndexNode *indexNode) {
+	AST_Query *queryExpressionNode = malloc(sizeof(AST_Query));
 	
 	queryExpressionNode->matchNode = matchNode;
 	queryExpressionNode->whereNode = whereNode;

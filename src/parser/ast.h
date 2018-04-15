@@ -180,8 +180,8 @@ typedef struct {
 } AST_ColumnNode;
 
 typedef enum {
-  CREATE_INDEX,
-  DROP_INDEX
+  DROP_INDEX,
+  CREATE_INDEX
 } AST_IndexOpType;
 
 typedef struct {
@@ -192,7 +192,7 @@ typedef struct {
 typedef struct {
   IndexTarget target;
   AST_IndexOpType operation;
-} AST_IndexOpNode;
+} AST_IndexNode;
 
 typedef struct {
 	AST_MatchNode *matchNode;
@@ -203,20 +203,7 @@ typedef struct {
 	AST_ReturnNode *returnNode;
 	AST_OrderNode *orderNode;
 	AST_LimitNode *limitNode;
-} AST_QueryExpressionNode;
-
-typedef enum {
-  AST_UNSET,
-  AST_EXPRESSION,
-  AST_INDEX,
-} AST_QueryType;
-
-typedef struct {
-  union {
-    AST_QueryExpressionNode *ast;
-    AST_IndexOpNode *indexOp;
-  };
-  AST_QueryType type;
+  AST_IndexNode *indexNode;
 } AST_Query;
 
 AST_NodeEntity* New_AST_NodeEntity(char *alias, char *label, Vector *properties);
@@ -248,10 +235,11 @@ AST_LimitNode* New_AST_LimitNode(int limit);
 AST_Query* New_AST_Query(AST_MatchNode *matchNode, AST_WhereNode *whereNode,
 													 AST_CreateNode *createNode, AST_SetNode *setNode,
 													 AST_DeleteNode *deleteNode, AST_ReturnNode *returnNode,
-													 AST_OrderNode *orderNode, AST_LimitNode *limitNode);
+													 AST_OrderNode *orderNode, AST_LimitNode *limitNode,
+                           AST_IndexNode *index);
 
 /* Build AST_Query for index operations */
-AST_IndexOpNode* AST_IndexOp(const char *label, const char *property);
+AST_IndexNode* AST_IndexOp(const char *label, const char *property, AST_IndexOpType optype);
 
 AST_Query* Allocate_AST_Query();
 

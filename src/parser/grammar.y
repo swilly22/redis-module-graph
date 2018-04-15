@@ -35,54 +35,35 @@
 query ::= expr(A). { ctx->root = A; }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D) returnClause(E) orderClause(F) limitClause(G). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, E, F, G);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(B, C, D, NULL, NULL, E, F, G, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) createClause(D). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(B, C, D, NULL, NULL, NULL, NULL, NULL);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(B, C, D, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) deleteClause(D). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(B, C, NULL, NULL, D, NULL, NULL, NULL);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(B, C, NULL, NULL, D, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, NULL, NULL, NULL);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(B, C, NULL, D, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= matchClause(B) whereClause(C) setClause(D) returnClause(E) orderClause(F) limitClause(G). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(B, C, NULL, D, NULL, E, F, G);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(B, C, NULL, D, NULL, E, F, G, NULL);
 }
 
 expr(A) ::= createClause(B). {
-  A = Allocate_AST_Query();
-	A->ast = New_AST_QueryExpressionNode(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL);
-  A->type = AST_EXPRESSION;
+	A = New_AST_Query(NULL, NULL, B, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 expr(A) ::= CREATE INDEX ON indexLabel(B) indexProp(C) . {
-  A = Allocate_AST_Query();
-  A->indexOp = AST_IndexOp(B.strval, C.strval);
-  A->indexOp->operation = CREATE_INDEX;
-  A->type = AST_INDEX;
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, CREATE_INDEX));
 }
 
-
 expr(A) ::= DROP INDEX ON indexLabel(B) indexProp(C) . {
-  A = Allocate_AST_Query();
-  A->indexOp = AST_IndexOp(B.strval, C.strval);
-  A->indexOp->operation = DROP_INDEX;
-  A->type = AST_INDEX;
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, DROP_INDEX));
 }
 
 indexLabel(A) ::= COLON UQSTRING(B) . {
