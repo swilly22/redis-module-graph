@@ -181,7 +181,7 @@ AST_Validation _Validate_WHERE_Clause(const AST_Query* ast, char **reason) {
 
 AST_Validation Validate_AST(const AST_Query* ast, char **reason) {
 	/* AST must include either a MATCH or CREATE clause. */
-	if(!(ast->matchNode || ast->createNode || ast->mergeNode)) {
+	if(!(ast->matchNode || ast->createNode || ast->mergeNode || ast->indexNode)) {
 		*reason = "Query must specify either MATCH or CREATE clause.";
 		return AST_INVALID;
 	}
