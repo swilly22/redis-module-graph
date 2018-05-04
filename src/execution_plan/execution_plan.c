@@ -263,7 +263,7 @@ Vector* _ExecutionPlan_AddFilters(OpNode *root, FT_FilterNode **filterTree) {
     }
 
     // See if filter tree filters any of the current op modified entities
-    if(FilterTree_ContainsNode(*filterTree, seen)) {    
+    if(FilterTree_ContainsNode(*filterTree, seen)) {
         // Create a minimum filter tree for the current execution plan operation
         FT_FilterNode *minTree = FilterTree_MinFilterTree(*filterTree, seen);
         

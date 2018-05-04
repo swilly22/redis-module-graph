@@ -171,7 +171,7 @@ ResultSet* NewResultSet(AST_Query* ast) {
     set->ast = ast;
     set->heap = NULL;
     set->trie = NULL;
-    set->aggregated = ReturnClause_ContainsAggregation(ast);
+    set->aggregated = ReturnClause_ContainsAggregation(ast->returnNode);
     set->ordered = (ast->orderNode != NULL);
     set->limit = RESULTSET_UNLIMITED;
     set->direction =  DIR_ASC;
