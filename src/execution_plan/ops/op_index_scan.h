@@ -8,19 +8,20 @@
 #include "../../stores/store.h"
 #include "../../index/index.h"
 
+typedef skiplistIterator IndexIterator;
+
 typedef struct {
     OpBase op;
     Node **node;            /* node being scanned */
     Node *_node;
-    RedisModuleCtx *ctx;
-    skiplist *sl;
-    skiplistIterator *iter;
+    Index *index;
+    IndexIterator *iter;
 } IndexScan;
 
 /* Creates a new IndexScan operation */
-OpBase *NewIndexScanOp(RedisModuleCtx *ctx, Graph *g, Node **node, const char *graph_name, char *label, skiplist *index_sl);
+OpBase *NewIndexScanOp(Graph *g, Node **node, Index *index);
 
-IndexScan* NewIndexScan(RedisModuleCtx *ctx, Graph *g, Node **node, const char *graph_name, char *label, skiplist *index_sl);
+IndexScan* NewIndexScan(Graph *g, Node **node, Index *index);
 
 /* IndexScan next operation
  * called each time a new ID is required */

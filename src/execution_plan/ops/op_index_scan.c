@@ -1,21 +1,17 @@
 #include "op_index_scan.h"
 
-OpBase *NewIndexScanOp(RedisModuleCtx *ctx, Graph *g, Node **node,
-    const char *graph_name, char *label, skiplist *index_sl) {
-  return (OpBase*)NewIndexScan(ctx, g, node, graph_name, label, index_sl);
+OpBase *NewIndexScanOp(Graph *g, Node **node, Index *index) {
+  return (OpBase*)NewIndexScan(g, node, index);
 }
 
-IndexScan* NewIndexScan(RedisModuleCtx *ctx, Graph *g, Node **node,
-    const char *graph_name, char *label, skiplist *index_sl) {
+IndexScan* NewIndexScan(Graph *g, Node **node, Index *index) {
 
   IndexScan *indexScan = malloc(sizeof(IndexScan));
-  indexScan->ctx = ctx;
   indexScan->node = node;
 
-  indexScan->sl = index_sl;
-  skiplistIterator *iter = malloc(sizeof(skiplistIterator));
-  *iter = skiplistIterateAll(indexScan->sl);
-  indexScan->iter = iter;
+  indexScan->index = index;
+  // TODO This should be changed to an IterateRange when filter specifies a value range
+  indexScan->iter = skiplistIterateAll(index->sl);
 
   // Set our Op operations
   indexScan->op.name = "Index Scan";
@@ -23,7 +19,7 @@ IndexScan* NewIndexScan(RedisModuleCtx *ctx, Graph *g, Node **node,
   indexScan->op.consume = IndexScanConsume;
   indexScan->op.reset = IndexScanReset;
   indexScan->op.free = IndexScanFree;
-  indexScan->op.modifies = NewVector(char*, 1); // TODO will never modify?
+  indexScan->op.modifies = NewVector(char*, 1);
 
   Vector_Push(indexScan->op.modifies, Graph_GetNodeAlias(g, *node));
 
@@ -52,8 +48,8 @@ OpResult IndexScanReset(OpBase *ctx) {
 
   /* Restore original node. */
   *indexScan->node = indexScan->_node;
-  // TODO Is this what this function should do?
-  *indexScan->iter = skiplistIterateAll(indexScan->sl);
+  free(indexScan->iter);
+  indexScan->iter = skiplistIterateAll(indexScan->index->sl);
 
   return OP_OK;
 }

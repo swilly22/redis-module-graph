@@ -384,8 +384,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
                 /* TODO: when indexing is enabled, use index when possible. */
               Index *nodeIndex = findIndex(node->label, NULL);
               if (nodeIndex) {
-                scan_op = NewOpNode(NewIndexScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
-                                    graph_name, node->label, nodeIndex->sl));
+                scan_op = NewOpNode(NewIndexScanOp(graph, Graph_GetNodeRef(graph, node), nodeIndex));
               } else {
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
