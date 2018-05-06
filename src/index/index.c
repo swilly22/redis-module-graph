@@ -64,36 +64,37 @@ Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
   SIType lastKeyType = SI_NUMERIC | T_STRING;
   SIType xor;
 
+  int i;
+  int prop_index = 0;
   while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
-    for (int i = 0; i < node->prop_count; i ++) {
-      prop = node->properties + i;
-
-      /*
-       * TODO (INDEX_INEFFICIENCY):
-       * Running strcmp in a loop over all properties is a wasteful
-       * solution to matching index targets, we should make something more efficient.
-       */
-
-      if (!strcmp(index->target.property, prop->name)) {
-        // This value will be cloned within the skiplistInsert routine if necessary
-        SIValue *key = &prop->value;
-
-        xor = key->type ^ lastKeyType;
-        if (!xor) {
-          // Exact match to last key type
-        } else if (xor <= SI_NUMERIC) {
-          // if ==, first comparison made and key type was string
-          // if <, value was different non-numeric type or first comparison
-          lastKeyType = key->type;
-        } else {
-          // TODO We will currently skip matching label-property pairs of incorrect property types
-          continue;
+    // If the sought property is at a different offset than it occupied in the previous node,
+    // then seek and update
+    if (!strcmp(index->target.property, node->properties[prop_index].name)) {
+      for (i = 0; i < node->prop_count; i ++) {
+        if (!strcmp(index->target.property, prop->name)) {
+          prop_index = i;
+          break;
         }
-
-        skiplistInsert(index->sl, key, node);
-        break;
       }
     }
+    prop = node->properties + prop_index;
+    // This value will be cloned within the skiplistInsert routine if necessary
+    SIValue *key = &prop->value;
+
+    xor = key->type ^ lastKeyType;
+    if (!xor) {
+      // Exact match to last key type
+    } else if (xor <= SI_NUMERIC) {
+      // if ==, first comparison made and key type was string
+      // if <, value was different non-numeric type or first comparison
+      lastKeyType = key->type;
+    } else {
+      // TODO We will currently skip matching label-property pairs of incorrect property types
+      continue;
+    }
+
+    skiplistInsert(index->sl, key, node);
+    break;
   }
 
   return index;
