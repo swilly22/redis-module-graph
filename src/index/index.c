@@ -48,7 +48,9 @@ void freeKey(void *key) {
   SIValue_Free(key);
 }
 
-void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexNode *indexOp) {
+Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp) {
+  Index *index = createIndex(indexOp->target.label, indexOp->target.property);
+
   LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
 
   LabelStoreIterator it;
@@ -93,6 +95,8 @@ void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST
       }
     }
   }
+
+  return index;
 }
 
 Index* createIndex(const char *label, const char *property) {

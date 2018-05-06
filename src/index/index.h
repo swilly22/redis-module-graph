@@ -22,7 +22,7 @@ typedef struct {
 } Index;
 
 Index* createIndex(const char *label, const char *property);
-void populateIndex(RedisModuleCtx *ctx, Index *index, const char *graphName, AST_IndexNode *indexOp);
+Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 Index* findIndex(const char *label, const char *property);
 
 #endif

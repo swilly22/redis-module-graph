@@ -157,8 +157,7 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     if (ast->indexNode != NULL) {
       if (ast->indexNode->operation == CREATE_INDEX) {
-        Index *index = createIndex(ast->indexNode->target.label, ast->indexNode->target.property);
-        populateIndex(ctx, index, graphName, ast->indexNode);
+        Index *index = populateIndex(ctx, graphName, ast->indexNode);
         if (!tmp_index_store) {
           tmp_index_store = NewVector(Index*, 1);
         }
