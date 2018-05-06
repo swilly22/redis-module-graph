@@ -69,8 +69,9 @@ Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
   while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
     // If the sought property is at a different offset than it occupied in the previous node,
     // then seek and update
-    if (!strcmp(index->target.property, node->properties[prop_index].name)) {
+    if (strcmp(index->target.property, node->properties[prop_index].name)) {
       for (i = 0; i < node->prop_count; i ++) {
+        prop = node->properties + i;
         if (!strcmp(index->target.property, prop->name)) {
           prop_index = i;
           break;
@@ -94,7 +95,6 @@ Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
     }
 
     skiplistInsert(index->sl, key, node);
-    break;
   }
 
   return index;
