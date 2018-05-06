@@ -384,7 +384,7 @@ void *skiplistPopTail(skiplist *sl) {
   return ptr;
 }
 
-skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
+skiplistIterator* skiplistIterateRange(skiplist *sl, void *min, void *max,
                                       int minExclusive, int maxExclusive) {
   skiplistNode *n;
   if (!min) {
@@ -401,23 +401,23 @@ skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
       n = NULL;
     }
   }
-  return (skiplistIterator){.current = n,
-                            .rangeMin = min,
-                            .minExclusive = minExclusive,
-                            .rangeMax = max,
-                            .maxExclusive = maxExclusive,
-                            .currentValOffset = 0,
-                            .sl = sl};
+
+  skiplistIterator *iter = calloc(1, sizeof(skiplistIterator));
+  iter->current = n;
+  iter->rangeMin = min;
+  iter->minExclusive = minExclusive;
+  iter->rangeMax = max;
+  iter->maxExclusive = maxExclusive;
+  iter->sl = sl;
+
+  return iter;
 }
 
-skiplistIterator skiplistIterateAll(skiplist *sl) {
-  return (skiplistIterator){.current = sl->header->level[0].forward,
-                            .rangeMin = NULL,
-                            .minExclusive = 0,
-                            .rangeMax = NULL,
-                            .maxExclusive = 0,
-                            .sl = sl,
-                            .currentValOffset = 0};
+skiplistIterator* skiplistIterateAll(skiplist *sl) {
+  skiplistIterator *iter = calloc(1, sizeof(skiplistIterator));
+  iter->current = sl->header->level[0].forward;
+  iter->sl = sl;
+  return iter;
 }
 
 void *skiplistIterator_Next(skiplistIterator *it) {

@@ -85,10 +85,10 @@ typedef struct {
   skiplist *sl;
 } skiplistIterator;
 
-skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
+skiplistIterator* skiplistIterateRange(skiplist *sl, void *min, void *max,
                                       int minExclusive, int maxExclusive);
 
-skiplistIterator skiplistIterateAll(skiplist *sl);
+skiplistIterator* skiplistIterateAll(skiplist *sl);
 void *skiplistIterator_Next(skiplistIterator *it);
 
 #endif
