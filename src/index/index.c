@@ -110,14 +110,23 @@ Index* createIndex(const char *label, const char *property) {
   return index;
 }
 
-Index* findIndex(const char *label, const char *property) {
+Index* findIndex(const char *label, Vector *properties) {
   if (!tmp_index_store) return NULL;
 
   Index *index_to_check;
-  for (int q = 0; q < Vector_Size(tmp_index_store); q ++) {
-    Vector_Get(tmp_index_store, q, &index_to_check);
-    if (!strcmp(index_to_check->target.label, label)) {
-      return index_to_check;
+  const char *cur_prop;
+  for (int i = 0; i < Vector_Size(tmp_index_store); i ++) {
+    Vector_Get(tmp_index_store, i, &index_to_check);
+    if (strcmp(index_to_check->target.label, label)) continue;
+
+    for (int j = 0; j < Vector_Size(properties); j ++) {
+      Vector_Get(properties, j, &cur_prop);
+
+      // TODO We are not yet assessing which viable index would
+      // be best to use.
+      if (!strcmp(index_to_check->target.property, cur_prop)) {
+        return index_to_check;
+      }
     }
   }
   return NULL;

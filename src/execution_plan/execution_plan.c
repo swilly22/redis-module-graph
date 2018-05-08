@@ -328,9 +328,12 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
 
     ExecutionPlan *execution_plan = (ExecutionPlan*)calloc(1, sizeof(ExecutionPlan));
 
-    /* List of operations. */
-    FT_FilterNode *filterTree = NULL;
+    // Build the filter tree if necessary first, as it will be used to find applicable indices
+    if(ast->whereNode != NULL) {
+        execution_plan->filter_tree = BuildFiltersTree(ast->whereNode->filters);
+    }
 
+    /* List of operations. */
     Vector *Ops = NewVector(OpNode*, 0);
 
     execution_plan->root = NewOpNode(NULL);
@@ -381,8 +384,27 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
              * this is an hanging node "()", create a scan operation. */
             OpNode *scan_op;
             if(node->label) {
-                /* TODO: when indexing is enabled, use index when possible. */
-              Index *nodeIndex = findIndex(node->label, NULL);
+              /* TODO: when indexing is enabled, use index when possible. */
+              char *alias = node->label;
+              // The filter tree employs aliases rather than labels
+              for (int q = 0; q < graph->node_count; graph ++) {
+                if (!strcmp(node->label, graph->nodes[q]->label)) {
+                  // TODO verify that 'node_aliases' always has identical offsets
+                  // to 'nodes'
+                  alias = graph->node_aliases[q];
+                  break;
+                }
+              }
+              Index *nodeIndex = NULL;
+              if (execution_plan->filter_tree != NULL && tmp_index_store) {
+                Vector *label_props = NewVector(char*, 1);
+                FilterTree_FindProperties(execution_plan->filter_tree, alias, label_props);
+                if (Vector_Size(label_props) > 0) {
+                  nodeIndex = findIndex(node->label, label_props);
+                }
+                Vector_Free(label_props);
+              }
+
               if (nodeIndex) {
                 scan_op = NewOpNode(NewIndexScanOp(graph, Graph_GetNodeRef(graph, node), nodeIndex));
               } else {
@@ -460,9 +482,8 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
         Vector_Get(nodesToMerge, i, &nodeToMerge);
         _ExecutionPlan_MergeNodes(execution_plan, nodeToMerge);
     }
-
-    if(ast->whereNode != NULL) {
-        execution_plan->filter_tree = BuildFiltersTree(ast->whereNode->filters);
+    // Transform filter tree and apply to execution plan
+    if(execution_plan->filter_tree != NULL) {
         _ExecutionPlan_AddFilters(execution_plan->root, &execution_plan->filter_tree);
     }
 

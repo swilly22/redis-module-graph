@@ -23,6 +23,6 @@ typedef struct {
 
 Index* createIndex(const char *label, const char *property);
 Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
-Index* findIndex(const char *label, const char *property);
+Index* findIndex(const char *label, Vector *properties);
 
 #endif
