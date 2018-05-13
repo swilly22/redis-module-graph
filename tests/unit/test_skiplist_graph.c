@@ -12,40 +12,22 @@ char *words[] = {"foo",  "bar",     "zap",    "pomo",
 const char *node_label = "default_label";
 char *prop_key = "default_prop_key";
 
-// Skiplist comparator functions
-int testCompareNodes(const void *p1, const void *p2) {
-  Node *a = (Node *)p1;
-  Node *b = (Node *)p2;
+// NOTE - these 'test*' functions are copies of those seen in 'index.c',
+// which can only be accessed from within the scope of index operations
 
-  if (a->id > b->id) {
-    return 1;
-  } else if (a->id < b->id) {
-    return -1;
-  } else {
-    return 0;
-  }
+// Skiplist comparator functions
+int testCompareNodes(const void *a, const void *b) {
+  return ((Node*)a)->id - ((Node*)b)->id;
 }
 
-int testCompareSI(void *p1, void *p2, void *ctx) {
-  SIValue *a = p1, *b = p2;
-
-  if (a->type & b->type & T_STRING) {
-    return strcmp(a->stringval, b->stringval);
-  } else if ((a->type & SI_NUMERIC) && (b->type & SI_NUMERIC)) {
-
-    if (a->doubleval > b->doubleval) {
-      return 1;
-    } else if (a->doubleval < b->doubleval) {
-      return -1;
-    } else {
-      return 0;
-    }
-  }
-
-  // We can only compare string and numeric SIValues, so this point
-  // should be unreachable for a properly constructed index.
-
-  return 0;
+int testCompareStrings(void *a, void *b, void *ctx) {
+  return strcmp(((SIValue*)a)->stringval, ((SIValue*)b)->stringval);
+}
+int testCompareNumerics(void *p1, void *p2, void *ctx) {
+  double a, b;
+  SIValue_ToDouble(p1, &a);
+  SIValue_ToDouble(p2, &b);
+  return a - b;
 }
 
 void testCloneKey(void **property) {
@@ -58,7 +40,7 @@ void testFreeKey(void *key) {
 }
 
 skiplist* build_skiplist(void) {
-  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
+  skiplist *sl = skiplistCreate(testCompareStrings, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 
@@ -87,7 +69,7 @@ skiplistNode* update_skiplist(skiplist *sl, void *val, void *old_key, void *new_
 }
 
 void test_skiplist_range(void) {
-  skiplist *sl = skiplistCreate(testCompareSI, NULL, testCompareNodes, testCloneKey, testFreeKey);
+  skiplist *sl = skiplistCreate(testCompareNumerics, NULL, testCompareNodes, testCloneKey, testFreeKey);
   Node *cur_node;
   SIValue *cur_prop;
 

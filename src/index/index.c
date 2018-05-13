@@ -1,38 +1,19 @@
 #include "index.h"
 
-int compareNodes(const void *p1, const void *p2) {
-  Node *a = (Node *)p1;
-  Node *b = (Node *)p2;
-
-  if (a->id > b->id) {
-    return 1;
-  } else if (a->id < b->id) {
-    return -1;
-  } else {
-    return 0;
-  }
+int compareNodes(const void *a, const void *b) {
+  return ((Node*)a)->id - ((Node*)b)->id;
 }
 
-int compareSI(void *p1, void *p2, void *ctx) {
-  SIValue *a = p1, *b = p2;
+int compareStrings(void *a, void *b, void *ctx) {
+  return strcmp(((SIValue*)a)->stringval, ((SIValue*)b)->stringval);
+}
 
-  if (a->type & b->type & T_STRING) {
-    return strcmp(a->stringval, b->stringval);
-  } else if ((a->type & SI_NUMERIC) && (b->type & SI_NUMERIC)) {
-
-    if (a->doubleval > b->doubleval) {
-      return 1;
-    } else if (a->doubleval < b->doubleval) {
-      return -1;
-    } else {
-      return 0;
-    }
-  }
-
-  // We can only compare string and numeric SIValues, so this point
-  // should be unreachable for a properly constructed index.
-
-  return 0;
+// TODO this seems inefficient
+int compareNumerics(void *p1, void *p2, void *ctx) {
+  double a, b;
+  SIValue_ToDouble(p1, &a);
+  SIValue_ToDouble(p2, &b);
+  return a - b;
 }
 
 /*
