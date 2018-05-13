@@ -29,10 +29,12 @@ void freeKey(void *key) {
   SIValue_Free(key);
 }
 
-Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp) {
-  Index *index = createIndex(indexOp->target.label, indexOp->target.property);
-
-  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index->target.label);
+// Create and populate index for specified property
+// (This function will create separate string and numeric indices if property has mixed types)
+void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp) {
+  const char *index_label = indexOp->target.label;
+  const char *index_prop = indexOp->target.property;
+  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index_label);
 
   LabelStoreIterator it;
   LabelStore_Scan(store, &it);
@@ -42,18 +44,25 @@ Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
   Node *node;
   EntityProperty *prop;
 
-  SIType lastKeyType = SI_NUMERIC | T_STRING;
-  SIType xor;
+  // We maintain one index per property per type;
+  // these will be created as necessary
+  Index *numeric_index = NULL;
+  Index *string_index = NULL;
+
+  // In the most common case, the node currently being indexed will be placed in the same index as the
+  // previous node, so we will try to optimize for that scenario
+  SIType last_key_type = T_NULL;
+  Index *current_index = NULL;
 
   int i;
   int prop_index = 0;
   while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
     // If the sought property is at a different offset than it occupied in the previous node,
     // then seek and update
-    if (strcmp(index->target.property, node->properties[prop_index].name)) {
+    if (strcmp(index_prop, node->properties[prop_index].name)) {
       for (i = 0; i < node->prop_count; i ++) {
         prop = node->properties + i;
-        if (!strcmp(index->target.property, prop->name)) {
+        if (!strcmp(index_prop, prop->name)) {
           prop_index = i;
           break;
         }
@@ -63,30 +72,48 @@ Index* populateIndex(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
     // This value will be cloned within the skiplistInsert routine if necessary
     SIValue *key = &prop->value;
 
-    xor = key->type ^ lastKeyType;
-    if (!xor) {
-      // Exact match to last key type
-    } else if (xor <= SI_NUMERIC) {
-      // if ==, first comparison made and key type was string
-      // if <, value was different non-numeric type or first comparison
-      lastKeyType = key->type;
-    } else {
-      // TODO We will currently skip matching label-property pairs of incorrect property types
-      continue;
+    if (key->type ^ last_key_type) {
+      // The current property is of a different type than the last,
+      // or we have not yet constructed an index
+      last_key_type = key->type;
+      if (key->type == T_STRING) {
+        if (string_index == NULL) {
+          // This is the first string property for this label; make a new index
+          string_index = createIndex(index_label, index_prop, T_STRING);
+          Vector_Push(tmp_index_store, string_index);
+        }
+        current_index = string_index;
+      } else if (key->type & SI_NUMERIC) {
+        if (numeric_index == NULL) {
+          // This is the first numeric property for this label; make a new index
+          numeric_index = createIndex(index_label, index_prop, SI_NUMERIC);
+          Vector_Push(tmp_index_store, numeric_index);
+        }
+        current_index = numeric_index;
+      } else {
+        // This property was neither a string nor numeric value.
+        // TODO I don't think that this scenario should be possible, but if we reach this
+        // point we will currently just skip this node
+        last_key_type = T_NULL;
+        continue;
+      }
     }
 
-    skiplistInsert(index->sl, key, node);
+    skiplistInsert(current_index->sl, key, node);
   }
-
-  return index;
 }
 
-Index* createIndex(const char *label, const char *property) {
+Index* createIndex(const char *label, const char *property, SIType value_type) {
   Index *index = malloc(sizeof(Index));
   index->target.label = strdup(label);
   index->target.property = strdup(property);
+  index->value_type = value_type;
 
-  index->sl = skiplistCreate(compareSI, NULL, compareNodes, cloneKey, freeKey);
+  if (value_type == T_STRING) {
+    index->sl = skiplistCreate(compareStrings, NULL, compareNodes, cloneKey, freeKey);
+  } else {
+    index->sl = skiplistCreate(compareNumerics, NULL, compareNodes, cloneKey, freeKey);
+  }
 
   return index;
 }

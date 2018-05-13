@@ -397,6 +397,9 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
               }
               Index *nodeIndex = NULL;
               if (execution_plan->filter_tree != NULL && tmp_index_store) {
+                // TODO must retrieve the index which matches the value type of the filter -
+                // "< 30" should retrieve a numeric index, while "< 'e'" should retrieve a string index
+
                 Vector *label_props = NewVector(char*, 1);
                 FilterTree_FindProperties(execution_plan->filter_tree, alias, label_props);
                 if (Vector_Size(label_props) > 0) {

@@ -157,17 +157,19 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     if (ast->indexNode != NULL) {
       if (ast->indexNode->operation == CREATE_INDEX) {
-        Index *index = populateIndex(ctx, graphName, ast->indexNode);
         if (!tmp_index_store) {
           tmp_index_store = NewVector(Index*, 1);
+        } else {
+          // TODO confirm that indices have not already been built for this property
         }
-        Vector_Push(tmp_index_store, index);
+        indexProperty(ctx, graphName, ast->indexNode);
       } else {
         errMsg = "Redis-Graph only supports index creation operations at present.\n";
         RedisModule_ReplyWithError(ctx, errMsg);
         return REDISMODULE_OK;
       }
 
+      // TODO do something better than this
       end = clock();
       double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
       double elapsedMS = elapsed * 1000;

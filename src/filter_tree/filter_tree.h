@@ -35,7 +35,7 @@ typedef struct {
 			char* property;
 		} Rop;
 	};
-	FT_CompareValueType t; 	/* Comapred value type, constant/node. */
+	FT_CompareValueType t; 	/* Compared value type, constant/node. */
 	CmpFunc cf;				/* Compare function, determines relation between val and element property. */
 } FT_PredicateNode;
 

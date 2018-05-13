@@ -8,6 +8,7 @@ IndexScan* NewIndexScan(Graph *g, Node **node, Index *index) {
 
   IndexScan *indexScan = malloc(sizeof(IndexScan));
   indexScan->node = node;
+  indexScan->_node = *node;
 
   indexScan->index = index;
   // TODO This should be changed to an IterateRange when filter specifies a value range
