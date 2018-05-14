@@ -62,6 +62,24 @@ AST_Query* _parse_query(RedisModuleCtx *ctx, const char *query, const char *grap
     return ast;
 }
 
+int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexNode) {
+  switch(indexNode->operation) {
+    case CREATE_INDEX:
+      if (!tmp_index_store) {
+        tmp_index_store = NewVector(Index*, 1);
+      } else {
+        // TODO confirm that indices have not already been built for this property
+      }
+      indexProperty(ctx, graphName, indexNode);
+      break;
+    default:
+      RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.\n");
+      return 1;
+  }
+
+  return 0;
+}
+
 /* Removes given graph.
  * Args:
  * argv[1] graph name
@@ -155,49 +173,30 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     AST_Query* ast = _parse_query(ctx, query, graphName, &errMsg);
     if (!ast) return REDISMODULE_OK; // OK?
 
-    if (ast->indexNode != NULL) {
-      if (ast->indexNode->operation == CREATE_INDEX) {
-        if (!tmp_index_store) {
-          tmp_index_store = NewVector(Index*, 1);
-        } else {
-          // TODO confirm that indices have not already been built for this property
+    if (ast->indexNode != NULL) { // index operation
+        int replied = _index_operation(ctx, graphName, ast->indexNode);
+        // return from this function if we have already enqueued a reply
+        if (replied) return REDISMODULE_OK;
+    } else { // operation requiring execution plan
+        ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
+        ResultSet* resultSet = ExecutionPlan_Execute(plan);
+        /* Send result-set back to client. */
+        ExecutionPlanFree(plan);
+        ResultSet_Replay(ctx, resultSet);
+
+        /* Replicate query only if it modified the keyspace. */
+        if(Query_Modifies_KeySpace(ast) &&
+              (resultSet->labels_added > 0 ||
+               resultSet->nodes_created > 0 ||
+               resultSet->properties_set > 0 ||
+               resultSet->relationships_created > 0 ||
+               resultSet->nodes_deleted > 0 ||
+               resultSet->relationships_deleted > 0)) {
+          RedisModule_ReplicateVerbatim(ctx);
         }
-        indexProperty(ctx, graphName, ast->indexNode);
-      } else {
-        errMsg = "Redis-Graph only supports index creation operations at present.\n";
-        RedisModule_ReplyWithError(ctx, errMsg);
-        return REDISMODULE_OK;
-      }
 
-      // TODO do something better than this
-      end = clock();
-      double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
-      double elapsedMS = elapsed * 1000;
-      char *strElapsed;
-      asprintf(&strElapsed, "Query internal execution time: %f milliseconds", elapsedMS);
-      RedisModule_ReplyWithStringBuffer(ctx, strElapsed, strlen(strElapsed));
-      free(strElapsed);
-      return REDISMODULE_OK;
+        ResultSet_Free(ctx, resultSet);
     }
-
-    ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
-    ResultSet* resultSet = ExecutionPlan_Execute(plan);
-    /* Send result-set back to client. */
-    ExecutionPlanFree(plan);
-    ResultSet_Replay(ctx, resultSet);
-
-    /* Replicate query only if it modified the keyspace. */
-    if(Query_Modifies_KeySpace(ast) &&
-            (resultSet->labels_added > 0 ||
-             resultSet->nodes_created > 0 ||
-             resultSet->properties_set > 0 ||
-             resultSet->relationships_created > 0 ||
-             resultSet->nodes_deleted > 0 ||
-             resultSet->relationships_deleted > 0)) {
-        RedisModule_ReplicateVerbatim(ctx);
-    }
-
-    ResultSet_Free(ctx, resultSet);
 
     /* Report execution timing. */
     end = clock();
