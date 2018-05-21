@@ -37,6 +37,7 @@
 #include "execution_plan/execution_plan.h"
 
 #include "index/index.h"
+#include "index/index_type.h"
 
 AST_Query* _parse_query(RedisModuleCtx *ctx, const char *query, const char *graphName, char **errMsg) {
     AST_Query* ast;
@@ -257,6 +258,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     if(RaxType_Register(ctx) == REDISMODULE_ERR) {
         printf("Failed to register raxtype\n");
+        return REDISMODULE_ERR;
+    }
+
+    if(IndexType_Register(ctx) == REDISMODULE_ERR) {
+        printf("Failed to register indextype\n");
         return REDISMODULE_ERR;
     }
 
