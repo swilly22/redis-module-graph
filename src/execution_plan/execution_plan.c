@@ -95,7 +95,7 @@ void _OpNode_RemoveParent(OpNode *child, OpNode *parent) {
 void _OpNode_PushInBetween(OpNode *parent, OpNode *onlyChild) {
     /* Disconnect every child from parent
      * Add each pareent's child to only child. */
-    while(parent->childCount != 0) { 
+    while(parent->childCount != 0) {
         _OpNode_AddChild(onlyChild, parent->children[0]);
         _OpNode_RemoveChild(parent, parent->children[0]);
     }
@@ -106,7 +106,7 @@ void _OpNode_PushInBetween(OpNode *parent, OpNode *onlyChild) {
 /*  Nodes with more than one incoming edge
  * will take part in two expand operations
  * MergeNodes will replace one of the expand operation
- * with an expand_into operation 
+ * with an expand_into operation
  * plan - execution plan to be modified
  * n - node with two incoming edges. */
 void _ExecutionPlan_MergeNodes(ExecutionPlan *plan, const Node *n) {
@@ -114,9 +114,9 @@ void _ExecutionPlan_MergeNodes(ExecutionPlan *plan, const Node *n) {
         return;
     }
 
-    /* Locate both expand operations involving 
+    /* Locate both expand operations involving
      * n as the dest node. */
-    
+
     OpNode *a = NULL;
     OpNode *b = NULL;
 
@@ -124,7 +124,7 @@ void _ExecutionPlan_MergeNodes(ExecutionPlan *plan, const Node *n) {
     Vector *nodesToVisit = NewVector(OpNode*, 3);
     Vector_Push(nodesToVisit, plan->root);
     /* Due to the structure of our execution plan
-     * there's not need to maintain a visited nodes 
+     * there's not need to maintain a visited nodes
      * as in classic BFS/DFS. */
     while(Vector_Size (nodesToVisit) > 0) {
         Vector_Pop(nodesToVisit, &current);
@@ -147,7 +147,7 @@ void _ExecutionPlan_MergeNodes(ExecutionPlan *plan, const Node *n) {
         }
     }
     Vector_Free(nodesToVisit);
-    
+
     if(a == NULL || b == NULL) {
         return;
     }
@@ -171,7 +171,7 @@ void _ExecutionPlan_MergeNodes(ExecutionPlan *plan, const Node *n) {
     // expand into should inherit b's parents
     for(int i = 0; i < b->parentCount; i++) {
         OpNode *bParent = b->parents[i];
-        
+
         if(bParent == expandInto) {
             continue;
         }
@@ -203,11 +203,11 @@ void _ExecutionPlan_OptimizeEntryPoints(RedisModuleCtx *ctx, Graph *g, const cha
         // Determin which node should be scaned, based on node cardinality
         // int src_cardinality = _ExecutionPlan_EstimateNodeCardinality(ctx, graph_name, *src);
         // int dest_cardinality = _ExecutionPlan_EstimateNodeCardinality(ctx, graph_name, *dest);
-        
+
         // if(dest_cardinality < src_cardinality) {
         //     entry_point = dest;
         // }
-        
+
         OpBase *scan_op = NULL;
         if((*entry_point)->label) {
             /* TODO: when indexing is enabled, use index when possible. */
@@ -215,8 +215,8 @@ void _ExecutionPlan_OptimizeEntryPoints(RedisModuleCtx *ctx, Graph *g, const cha
         } else {
             /* Node is not labeled, no other option but a full scan. */
             scan_op = NewAllNodeScanOp(ctx, g, entry_point, graph_name);
-        }        
-        
+        }
+
         _OpNode_AddChild(root, NewOpNode(scan_op));
 
     } else {
@@ -242,7 +242,7 @@ Vector* _ExecutionPlan_AddFilters(OpNode *root, FT_FilterNode **filterTree) {
     /* Traverse execution plan, upwards. */
     for(int i = root->childCount-1; i >= 0; i--) {
         Vector *saw = _ExecutionPlan_AddFilters(root->children[i], filterTree);
-        
+
         /* No need to continue, filter tree is empty. */
         if(*filterTree == NULL) {
             if(saw != NULL) {
@@ -266,10 +266,10 @@ Vector* _ExecutionPlan_AddFilters(OpNode *root, FT_FilterNode **filterTree) {
     if(FilterTree_ContainsNode(*filterTree, seen)) {
         // Create a minimum filter tree for the current execution plan operation
         FT_FilterNode *minTree = FilterTree_MinFilterTree(*filterTree, seen);
-        
+
         // Remove op modified entities from main filter tree.
         FilterTree_RemovePredNodes(filterTree, seen);
-        
+
         OpNode *nodeFilter = NewOpNode(NewFilterOp(minTree));
         _OpNode_PushInBetween(root, nodeFilter);
     }
@@ -302,7 +302,7 @@ void _Determine_Graph_Size(const AST_Query *ast, size_t *node_count, size_t *edg
     *edge_count = 0;
     *node_count = 0;
     Vector *entities;
-    
+
     if(ast->matchNode) {
         entities = ast->matchNode->graphEntities;
         _Count_Graph_Entities(entities, node_count,edge_count);
@@ -327,10 +327,13 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
     if(ast->matchNode) BuildGraph(graph, ast->matchNode->graphEntities);
 
     ExecutionPlan *execution_plan = (ExecutionPlan*)calloc(1, sizeof(ExecutionPlan));
-    
-    /* List of operations. */    
-    FT_FilterNode *filterTree = NULL;
 
+    // Build the filter tree if necessary first, as it will be used to find applicable indices
+    if(ast->whereNode != NULL) {
+        execution_plan->filter_tree = BuildFiltersTree(ast->whereNode->filters);
+    }
+
+    /* List of operations. */
     Vector *Ops = NewVector(OpNode*, 0);
 
     execution_plan->root = NewOpNode(NULL);
@@ -346,7 +349,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
     for(int i = 0; i < Vector_Size(entryNodes); i++) {
         Node *node;
         Vector_Get(entryNodes, i, &node);
-        
+
         /* Advance if possible. */
         if(Vector_Size(node->outgoing_edges) > 0) {
             Vector *reversedExpandOps = NewVector(OpNode*, 0);
@@ -359,13 +362,13 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             while(Vector_Size(srcNode->outgoing_edges) > 0) {
                 Vector_Get(srcNode->outgoing_edges, 0, &edge);
                 destNode = edge->dest;
-                
+
                 OpNode *opNodeExpandAll = NewOpNode(NewExpandAllOp(ctx, graph, graph_name,
                                                                    Graph_GetNodeRef(graph, srcNode),
                                                                    Graph_GetEdgeRef(graph, edge),
                                                                    Graph_GetNodeRef(graph, destNode)));
                 Vector_Push(reversedExpandOps, opNodeExpandAll);
-                
+
                 /* Advance. */
                 srcNode = destNode;
             }
@@ -377,13 +380,40 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
                 Vector_Push(Ops, opNodeExpandAll);
             }
         } else {
-            /* Node doesn't have any incoming nor outgoing edges, 
+            /* Node doesn't have any incoming nor outgoing edges,
              * this is an hanging node "()", create a scan operation. */
             OpNode *scan_op;
             if(node->label) {
-                /* TODO: when indexing is enabled, use index when possible. */
+              /* TODO: when indexing is enabled, use index when possible. */
+              char *alias = node->label;
+              // The filter tree employs aliases rather than labels
+              for (int q = 0; q < graph->node_count; graph ++) {
+                if (!strcmp(node->label, graph->nodes[q]->label)) {
+                  // TODO verify that 'node_aliases' always has identical offsets
+                  // to 'nodes'
+                  alias = graph->node_aliases[q];
+                  break;
+                }
+              }
+              Index *nodeIndex = NULL;
+              if (execution_plan->filter_tree != NULL && tmp_index_store) {
+                // TODO must retrieve the index which matches the value type of the filter -
+                // "< 30" should retrieve a numeric index, while "< 'e'" should retrieve a string index
+
+                Vector *label_props = NewVector(char*, 1);
+                FilterTree_FindProperties(execution_plan->filter_tree, alias, label_props);
+                if (Vector_Size(label_props) > 0) {
+                  nodeIndex = findIndex(node->label, label_props);
+                }
+                Vector_Free(label_props);
+              }
+
+              if (nodeIndex) {
+                scan_op = NewOpNode(NewIndexScanOp(graph, Graph_GetNodeRef(graph, node), nodeIndex));
+              } else {
                 scan_op = NewOpNode(NewNodeByLabelScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
                                     graph_name, node->label));
+              }
             } else {
                 /* Node is not labeled, no other option but a full scan. */
                 scan_op = NewOpNode(NewAllNodeScanOp(ctx, graph, Graph_GetNodeRef(graph, node),
@@ -397,7 +427,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             OpNode* currentOp;
             OpNode* prevOp;
             Vector_Pop(Ops, &prevOp);
-            
+
             /* Connect operations in reversed order */
             do {
                 Vector_Pop(Ops, &currentOp);
@@ -435,7 +465,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             int request_refresh = (execution_plan->root->childCount > 0);
             OpBase *op_create = NewCreateOp(ctx, graph, graph_name, request_refresh,
                                             execution_plan->result_set);
-            
+
             if(execution_plan->root->operation == NULL) {
                 /* Set root operation to create. */
                 execution_plan->root->operation = op_create;
@@ -448,16 +478,15 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
 
     /* Optimizations and modifications. */
     _ExecutionPlan_OptimizeEntryPoints(ctx, graph, graph_name, ast, execution_plan->root);
-    
+
     Vector *nodesToMerge = Graph_GetNDegreeNodes(graph, 2);
     for(int i = 0; i < Vector_Size(nodesToMerge); i++) {
         Node *nodeToMerge;
         Vector_Get(nodesToMerge, i, &nodeToMerge);
         _ExecutionPlan_MergeNodes(execution_plan, nodeToMerge);
     }
-
-    if(ast->whereNode != NULL) {
-        execution_plan->filter_tree = BuildFiltersTree(ast->whereNode->filters);
+    // Transform filter tree and apply to execution plan
+    if(execution_plan->filter_tree != NULL) {
         _ExecutionPlan_AddFilters(execution_plan->root, &execution_plan->filter_tree);
     }
 
@@ -467,7 +496,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
 void _ExecutionPlanPrint(const OpNode *op, char **strPlan, int ident) {
     char strOp[512] = {0};
     sprintf(strOp, "%*s%s\n", ident, "", op->operation->name);
-    
+
     if(*strPlan == NULL) {
         *strPlan = calloc(strlen(strOp) + 1, sizeof(char));
     } else {
@@ -488,7 +517,7 @@ char* ExecutionPlanPrint(const ExecutionPlan *plan) {
 
 void ResetStream(OpNode *stream) {
     stream->operation->reset(stream->operation);
-    
+
     for(int i = 0; i < stream->childCount; i++) {
         ResetStream(stream->children[i]);
     }
@@ -498,14 +527,14 @@ OpResult _ExecuteOpNode(OpNode *node, Graph *graph) {
 consume:
     node->state = StreamConsuming;
     OpResult res = node->operation->consume(node->operation, graph);
-    
+
     /* Incase we're depleted or require data renewal
      * try to get new data from children */
     if(res == OP_REFRESH) {
         if(node->operation->reset(node->operation) != OP_OK) {
             return OP_ERR;
         }
-        
+
         res = PullFromStreams(node, graph);
         if(res == OP_OK) {
             // We're good to go.
@@ -558,7 +587,7 @@ OpResult PullFromStreams(OpNode *source, Graph *graph) {
             return OP_ERR;
         }
     }
-    
+
     return OP_OK;
 }
 
@@ -572,7 +601,7 @@ void OpNode_Free(OpNode* op) {
     for(int i = 0; i < op->childCount; i++) {
         OpNode_Free(op->children[i]);
     }
-    
+
     // Free internal operation
     op->operation->free(op->operation);
     free(op);
