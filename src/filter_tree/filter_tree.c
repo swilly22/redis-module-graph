@@ -262,7 +262,7 @@ FT_FilterNode* BuildFiltersTree(const AST_FilterNode *root) {
         } else {
             return _CreateVaryingFilterNode(root->pn);
         }
-	}
+    }
 
     // root->t == N_COND
     // Create condition node
@@ -372,6 +372,22 @@ int FilterTree_ContainsNode(const FT_FilterNode *root, const Vector *aliases) {
 
     return (FilterTree_ContainsNode(LeftChild(root), aliases) ||
             FilterTree_ContainsNode(RightChild(root), aliases));
+}
+
+// Return all properties associated with the given alias
+void FilterTree_FindProperties(const FT_FilterNode *root, const char *alias, Vector *props) {
+    if(root == NULL) {
+        return;
+    }
+
+    if(IsNodePredicate(root)) {
+        if (!strcmp(alias, root->pred.Lop.alias)) {
+            Vector_Push(props, root->pred.Lop.property);
+            return;
+        }
+    } // Node is condition
+    FilterTree_FindProperties(LeftChild(root), alias, props);
+    FilterTree_FindProperties(RightChild(root), alias, props);
 }
 
 void _FilterTree_Print(const FT_FilterNode *root, int ident) {
