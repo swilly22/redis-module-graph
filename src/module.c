@@ -36,6 +36,8 @@
 
 #include "execution_plan/execution_plan.h"
 
+#include "index/index.h"
+
 AST_Query* _parse_query(RedisModuleCtx *ctx, const char *query, const char *graphName, char **errMsg) {
     AST_Query* ast;
 
@@ -57,6 +59,24 @@ AST_Query* _parse_query(RedisModuleCtx *ctx, const char *query, const char *grap
     }
 
     return ast;
+}
+
+int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexNode) {
+  switch(indexNode->operation) {
+    case CREATE_INDEX:
+      if (!tmp_index_store) {
+        tmp_index_store = NewVector(Index*, 1);
+      } else {
+        // TODO confirm that indices have not already been built for this property
+      }
+      indexProperty(ctx, graphName, indexNode);
+      break;
+    default:
+      RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.\n");
+      return 1;
+  }
+
+  return 0;
 }
 
 /* Removes given graph.
@@ -152,24 +172,30 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     AST_Query* ast = _parse_query(ctx, query, graphName, &errMsg);
     if (!ast) return REDISMODULE_OK;
 
-    ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
-    ResultSet* resultSet = ExecutionPlan_Execute(plan);
-    /* Send result-set back to client. */
-    ExecutionPlanFree(plan);
-    ResultSet_Replay(ctx, resultSet);
+    if (ast->indexNode != NULL) { // index operation
+        int replied = _index_operation(ctx, graphName, ast->indexNode);
+        // return from this function if we have already enqueued a reply
+        if (replied) return REDISMODULE_OK;
+    } else { // operation requiring execution plan
+        ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
+        ResultSet* resultSet = ExecutionPlan_Execute(plan);
+        /* Send result-set back to client. */
+        ExecutionPlanFree(plan);
+        ResultSet_Replay(ctx, resultSet);
 
-    /* Replicate query only if it modified the keyspace. */
-    if(Query_Modifies_KeySpace(ast) &&
-            (resultSet->labels_added > 0 ||
-             resultSet->nodes_created > 0 ||
-             resultSet->properties_set > 0 ||
-             resultSet->relationships_created > 0 ||
-             resultSet->nodes_deleted > 0 ||
-             resultSet->relationships_deleted > 0)) {
-        RedisModule_ReplicateVerbatim(ctx);
+        /* Replicate query only if it modified the keyspace. */
+        if(Query_Modifies_KeySpace(ast) &&
+              (resultSet->labels_added > 0 ||
+               resultSet->nodes_created > 0 ||
+               resultSet->properties_set > 0 ||
+               resultSet->relationships_created > 0 ||
+               resultSet->nodes_deleted > 0 ||
+               resultSet->relationships_deleted > 0)) {
+          RedisModule_ReplicateVerbatim(ctx);
+        }
+
+        ResultSet_Free(ctx, resultSet);
     }
-
-    ResultSet_Free(ctx, resultSet);
 
     /* Report execution timing. */
     end = clock();
@@ -245,6 +271,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if(RedisModule_CreateCommand(ctx, "graph.EXPLAIN", MGraph_Explain, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
+
+    tmp_index_store = NULL;
 
     return REDISMODULE_OK;
 }
