@@ -1,6 +1,7 @@
 #ifndef __INDEX_H__
 #define __INDEX_H__
 
+#include <assert.h>
 #include "../redismodule.h"
 #include "../graph/graph_entity.h"
 #include "../stores/store.h"
