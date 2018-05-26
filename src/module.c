@@ -74,10 +74,10 @@ int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
       break;
     default:
       RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.\n");
-      return 1;
+      return 0;
   }
 
-  return 0;
+  return 1;
 }
 
 /* Removes given graph.
@@ -174,9 +174,9 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (!ast) return REDISMODULE_OK;
 
     if (ast->indexNode != NULL) { // index operation
-        int replied = _index_operation(ctx, graphName, ast->indexNode);
+        int success = _index_operation(ctx, graphName, ast->indexNode);
         // return from this function if we have already enqueued a reply
-        if (replied) return REDISMODULE_OK;
+        if (!success) return REDISMODULE_OK;
     } else { // operation requiring execution plan
         ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
         ResultSet* resultSet = ExecutionPlan_Execute(plan);
