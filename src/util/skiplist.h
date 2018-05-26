@@ -89,6 +89,10 @@ skiplistIterator* skiplistIterateRange(skiplist *sl, void *min, void *max,
                                       int minExclusive, int maxExclusive);
 
 skiplistIterator* skiplistIterateAll(skiplist *sl);
+
+void skiplistIterate_Reset(skiplistIterator *iter);
+void skiplistIterate_Free(skiplistIterator *iter);
+
 void *skiplistIterator_Next(skiplistIterator *it);
 
 #endif

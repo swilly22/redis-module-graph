@@ -97,7 +97,7 @@ void test_skiplist_range(void) {
   }
 
   skiplistFree(sl);
-  free(iter);
+  skiplistIterate_Free(iter);
 }
 
 void test_skiplist_delete(void) {

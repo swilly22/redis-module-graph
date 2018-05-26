@@ -402,8 +402,9 @@ skiplistIterator* skiplistIterateRange(skiplist *sl, void *min, void *max,
     }
   }
 
-  skiplistIterator *iter = calloc(1, sizeof(skiplistIterator));
+  skiplistIterator *iter = zmalloc(sizeof(skiplistIterator));
   iter->current = n;
+  iter->currentValOffset = 0;
   iter->rangeMin = min;
   iter->minExclusive = minExclusive;
   iter->rangeMax = max;
@@ -418,6 +419,22 @@ skiplistIterator* skiplistIterateAll(skiplist *sl) {
   iter->current = sl->header->level[0].forward;
   iter->sl = sl;
   return iter;
+}
+
+void skiplistIterate_Reset(skiplistIterator *iter) {
+  // If this iterator was built with a minimum value, we will traverse the skiplist
+  // to initialize it properly.
+  if (iter->rangeMin == NULL) {
+    iter->current = iter->sl->header->level[0].forward;
+  } else {
+    iter->current = skiplistFindAtLeast(iter->sl, iter->rangeMin, iter->minExclusive);
+  }
+
+  iter->currentValOffset = 0;
+}
+
+void skiplistIterate_Free(skiplistIterator *iter) {
+  zfree(iter);
 }
 
 void *skiplistIterator_Next(skiplistIterator *it) {

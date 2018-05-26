@@ -112,16 +112,6 @@ void test_numeric_sorts(void) {
     skiplistInsert(numeric_sl, keys + i, vals + i);
   }
 
-  double lastval = -1;
-  double *retval;
-  skiplistIterator *iter = skiplistIterateAll(numeric_sl);
-  // Verify that skiplist is sorted on numeric keys
-  while ((retval = skiplistIterator_Next(iter)) != NULL) {
-    assert(lastval + 1 == *(double *)retval);
-    lastval = *retval;
-  }
-  free(iter);
-
   // Search for a key not in skiplist
   skiplistNode *ret;
   double non_existent_key = -2;
@@ -151,6 +141,28 @@ void test_numeric_sorts(void) {
   ret = skiplistFindAtLeast(numeric_sl, &threshold, 1);
   assert (*(double*)ret->key == 1);
 
+  // Verify that skiplist is sorted on numeric keys
+  double lastval = -1;
+  double *retval;
+  skiplistIterator *iter = skiplistIterateAll(numeric_sl);
+  while ((retval = skiplistIterator_Next(iter)) != NULL) {
+    assert(lastval + 1 == *(double *)retval);
+    lastval = *retval;
+  }
+
+  // Delete a node from the skiplist
+  delete_result = skiplistDelete(numeric_sl, &keys[3], NULL);
+  assert(delete_result == 1);
+  ret = skiplistFind(numeric_sl, &keys[3]);
+  assert (ret == NULL);
+
+  // Verify that the delete operation removes nodes from the skiplist
+  skiplistIterate_Reset(iter);
+  while ((retval = skiplistIterator_Next(iter)) != NULL) {
+    assert(*(double *)retval != keys[3]);
+  }
+  skiplistIterate_Free(iter);
+
   // Iterate over a range of keys (-INF, 0]
   double key_val = 0;
   iter = skiplistIterateRange(numeric_sl, NULL, &key_val, 0, 1);
@@ -162,7 +174,7 @@ void test_numeric_sorts(void) {
   assert(*retval == 1);
   retval = skiplistIterator_Next(iter);
   assert(retval == NULL);
-  free(iter);
+  skiplistIterate_Free(iter);
 
   // Iterate over a range of keys [0, 5]
   key_val = 0;
@@ -177,21 +189,9 @@ void test_numeric_sorts(void) {
   assert(*retval == 4);
   retval = skiplistIterator_Next(iter);
   assert(retval == NULL);
-
-  // Delete a node from the skiplist
-  delete_result = skiplistDelete(numeric_sl, &keys[3], NULL);
-  assert(delete_result == 1);
-  ret = skiplistFind(numeric_sl, &keys[3]);
-  assert (ret == NULL);
-
-  // Verify that the delete operation removes nodes from the skiplist
-  iter = skiplistIterateAll(numeric_sl);
-  while ((retval = skiplistIterator_Next(iter)) != NULL) {
-    assert(*(double *)retval != keys[3]);
-  }
+  skiplistIterate_Free(iter);
 
   skiplistFree(numeric_sl);
-  free(iter);
 }
 
 // Verify that the skiplist iterator passes over all elements (in order)
@@ -217,8 +217,8 @@ void test_sl_iterator(void) {
   x = skiplistIterator_Next(iter);
   assert (x == NULL);
 
+  skiplistIterate_Free(iter);
   skiplistFree(string_sl);
-  free(iter);
 }
 
 int main(void) {
