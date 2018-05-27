@@ -49,14 +49,13 @@ OpResult IndexScanReset(OpBase *ctx) {
 
   /* Restore original node. */
   *indexScan->node = indexScan->_node;
-  free(indexScan->iter);
-  indexScan->iter = skiplistIterateAll(indexScan->index->sl);
+  skiplistIterate_Reset(indexScan->iter);
 
   return OP_OK;
 }
 
 void IndexScanFree(OpBase *op) {
   IndexScan *indexScan = (IndexScan *)op;
-  free(indexScan->iter);
+  skiplistIterate_Free(indexScan->iter);
   free(indexScan);
 }
