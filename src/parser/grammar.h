@@ -9,9 +9,9 @@
 #define GE                               9
 #define LT                              10
 #define LE                              11
-#define CREATE                          12
-#define INDEX                           13
-#define ON                              14
+#define INDEX                           12
+#define ON                              13
+#define CREATE                          14
 #define DROP                            15
 #define COLON                           16
 #define UQSTRING                        17
