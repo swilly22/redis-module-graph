@@ -6,8 +6,6 @@
 #include "../resultset/resultset.h"
 #include "../filter_tree/filter_tree.h"
 
-#include "../index/index.h"
-
 /* StreamState
  * Different states in which stream can be at. */
 typedef enum {
