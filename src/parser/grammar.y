@@ -63,13 +63,14 @@ expr(A) ::= createClause(B). {
 //	A = New_AST_Query(NULL, NULL, NULL, B, NULL, NULL, NULL, NULL, NULL, NULL);
 //}
 
-expr(A) ::= CREATE INDEX ON indexLabel(B) indexProp(C) . {
-	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, CREATE_INDEX));
+expr(A) ::= indexOpToken(B) INDEX ON indexLabel(C) indexProp(D) . {
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(C.strval, D.strval, B));
 }
 
-expr(A) ::= DROP INDEX ON indexLabel(B) indexProp(C) . {
-	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(B.strval, C.strval, DROP_INDEX));
-}
+%type indexOpToken { AST_IndexOpType }
+
+indexOpToken(A) ::= CREATE . { A = CREATE_INDEX; }
+indexOpToken(A) ::= DROP . { A = DROP_INDEX; }
 
 indexLabel(A) ::= COLON UQSTRING(B) . {
   A = B;
