@@ -63,21 +63,8 @@ expr(A) ::= createClause(B). {
 //	A = New_AST_Query(NULL, NULL, NULL, B, NULL, NULL, NULL, NULL, NULL, NULL);
 //}
 
-expr(A) ::= indexOpToken(B) INDEX ON indexLabel(C) indexProp(D) . {
-	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, New_AST_IndexNode(C.strval, D.strval, B));
-}
-
-%type indexOpToken { AST_IndexOpType }
-
-indexOpToken(A) ::= CREATE . { A = CREATE_INDEX; }
-indexOpToken(A) ::= DROP . { A = DROP_INDEX; }
-
-indexLabel(A) ::= COLON UQSTRING(B) . {
-  A = B;
-}
-
-indexProp(A) ::= LEFT_PARENTHESIS UQSTRING(B) RIGHT_PARENTHESIS . {
-  A = B;
+expr(A) ::= indexClause(B). {
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, B);
 }
 
 %type matchClause { AST_MatchNode* }
@@ -108,6 +95,25 @@ createClause(A) ::= CREATE chains(B). {
 //	Vector_Push(B->nodes, C);
 //	A = B;
 //}
+
+%type indexClause { AST_IndexNode* }
+
+indexClause(A) ::= indexOpToken(B) INDEX ON indexLabel(C) indexProp(D) . {
+  A = New_AST_IndexNode(C.strval, D.strval, B);
+}
+
+%type indexOpToken { AST_IndexOpType }
+
+indexOpToken(A) ::= CREATE . { A = CREATE_INDEX; }
+indexOpToken(A) ::= DROP . { A = DROP_INDEX; }
+
+indexLabel(A) ::= COLON UQSTRING(B) . {
+  A = B;
+}
+
+indexProp(A) ::= LEFT_PARENTHESIS UQSTRING(B) RIGHT_PARENTHESIS . {
+  A = B;
+}
 
 %type setClause { AST_SetNode* }
 setClause(A) ::= SET setList(B). {
