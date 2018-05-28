@@ -8,7 +8,6 @@
 #include "../../stores/store.h"
 #include "../../index/index.h"
 
-typedef skiplistIterator IndexIterator;
 
 typedef struct {
     OpBase op;
@@ -19,9 +18,9 @@ typedef struct {
 } IndexScan;
 
 /* Creates a new IndexScan operation */
-OpBase *NewIndexScanOp(Graph *g, Node **node, Index *index);
+OpBase *NewIndexScanOp(Graph *g, Node **node, IndexBounds *iter_data);
 
-IndexScan* NewIndexScan(Graph *g, Node **node, Index *index);
+IndexScan* NewIndexScan(Graph *g, Node **node, IndexBounds *iter_data);
 
 /* IndexScan next operation
  * called each time a new ID is required */

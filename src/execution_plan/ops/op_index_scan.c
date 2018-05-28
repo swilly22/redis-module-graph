@@ -1,18 +1,30 @@
 #include "op_index_scan.h"
 
-OpBase *NewIndexScanOp(Graph *g, Node **node, Index *index) {
-  return (OpBase*)NewIndexScan(g, node, index);
+OpBase *NewIndexScanOp(Graph *g, Node **node, IndexBounds *index_data) {
+  return (OpBase*)NewIndexScan(g, node, index_data);
 }
 
-IndexScan* NewIndexScan(Graph *g, Node **node, Index *index) {
+IndexScan* NewIndexScan(Graph *g, Node **node, IndexBounds *index_data) {
 
   IndexScan *indexScan = malloc(sizeof(IndexScan));
   indexScan->node = node;
   indexScan->_node = *node;
 
-  indexScan->index = index;
-  // TODO This should be changed to an IterateRange when filter specifies a value range
-  indexScan->iter = skiplistIterateAll(index->sl);
+  indexScan->index = index_data->index;
+  SIValue *upper = NULL;
+  // Only the upper bound must be cloned, as the lower bound is only accessed in the skiplistIterateRange call directly below
+  if (index_data->upper) {
+    upper = malloc(sizeof(SIValue));
+    *upper = SI_Clone(*index_data->upper);
+  }
+
+  if (index_data->iter_type == T_STRING) {
+    indexScan->iter = skiplistIterateRange(indexScan->index->string_sl, index_data->lower, upper, index_data->minExclusive, index_data->maxExclusive);
+  } else if (index_data->iter_type & SI_NUMERIC) {
+    indexScan->iter = skiplistIterateRange(indexScan->index->numeric_sl, index_data->lower, upper, index_data->minExclusive, index_data->maxExclusive);
+  } else {
+    assert(0);
+  }
 
   // Set our Op operations
   indexScan->op.name = "Index Scan";
