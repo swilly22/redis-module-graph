@@ -9,6 +9,8 @@
 #include "../parser/ast.h"
 #include "../graph/node.h"
 #include "../dep/rax/rax.h"
+#include "../filter_tree/filter_tree.h"
+#include "../parser/grammar.h" // required for the definition of filter operations (LT, GT, etc)
 
 typedef skiplistIterator IndexIterator;
 
@@ -24,8 +26,19 @@ typedef struct {
   IndexIterator *iter;
 } Index;
 
+typedef struct {
+  Index *index;
+  SIValue *lower;
+  SIValue *upper;
+  int minExclusive;
+  int maxExclusive;
+  SIType iter_type;
+} IndexBounds;
+
 void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 Index* createIndex(const char *label, const char *property);
 Index* retrieveIndex(const char *label, const char *property);
+/* Select an Index and range based on filters associated with Node */
+IndexBounds selectIndexFromFilters(Vector *filters, const char *label);
 
 #endif

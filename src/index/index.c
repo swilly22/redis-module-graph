@@ -101,16 +101,66 @@ Index* retrieveIndex(const char *label, const char *property) {
   return NULL;
 }
 
+/*
+ * Before the ExecutionPlan has been constructed, we can analyze the FilterTree
+ * to see if a scan operation can employ an index. This function will return a
+ * struct containing an appropriate index (if any) and the boundaries for setting its iterator.
+ */
+IndexBounds selectIndexFromFilters(Vector *filters, const char *label) {
+  IndexBounds bounds;
+  bounds.lower = bounds.upper = NULL;
+  bounds.index = NULL;
 
-    for (int j = 0; j < Vector_Size(properties); j ++) {
-      Vector_Get(properties, j, &cur_prop);
+  Index *chosen_index = NULL;
+  FT_PredicateNode *current;
+  while (Vector_Size(filters) > 0) {
+    Vector_Pop(filters, &current);
+    if (!chosen_index) {
+      // Look this property up to see if it has been indexed (using the label rather than the node alias)
+      chosen_index = retrieveIndex(label, current->Lop.property);
+      if (chosen_index == NULL) continue;
 
-      // TODO We are not yet assessing which viable index would
-      // be best to use.
-      if (!strcmp(index_to_check->target.property, cur_prop)) {
-        return index_to_check;
-      }
+      // TODO Currently, we will default to using the first valid index we find -
+      // in the future, it would be worthwhile to compare all viable indices and
+      // attempt to choose the most efficient one
+      bounds.index = chosen_index;
+      bounds.iter_type = current->constVal.type;
+    } else if (strcmp(chosen_index->target.property, current->Lop.property)) {
+      // This filter's property does not match our index
+      continue;
+    }
+
+    /*
+     * TODO This block assumes that multiple filters specified on the same alias-property pair
+     * can be validly compared with either filter's comparator function.
+     * Currently, this is not a safe assumption here or for the FilterTree as a whole
+     * (a query like "MATCH (p:person) WHERE p.age < 50 AND p.age != "string"" is unhandled)
+     */
+    switch(current->op) {
+      case EQ:
+        bounds.lower = &current->constVal;
+        bounds.upper = &current->constVal;
+        bounds.minExclusive = bounds.maxExclusive = 0;
+        // This is the best possible bound; no need to look further
+        return bounds;
+
+      case GT | GE:
+        if (bounds.lower && (current->cf(bounds.lower, &current->constVal) > 0)) {
+          break; // Don't set new bound unless it narrows the range
+        }
+        bounds.lower = &current->constVal;
+        bounds.minExclusive = current->op == GT ? 1 : 0;
+        break;
+
+      case LT | LE:
+        if (bounds.upper && (current->cf(bounds.upper, &current->constVal) < 0)) {
+          break; // Don't set new bound unless it narrows the range
+        }
+        bounds.upper = &current->constVal;
+        bounds.maxExclusive = current->op == LT ? 1 : 0;
+        break;
     }
   }
-  return NULL;
+
+  return bounds;
 }
