@@ -64,7 +64,7 @@ expr(A) ::= createClause(B). {
 //}
 
 expr(A) ::= indexOpToken(B) INDEX ON indexLabel(C) indexProp(D) . {
-	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, AST_IndexOp(C.strval, D.strval, B));
+	A = New_AST_Query(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, New_AST_IndexNode(C.strval, D.strval, B));
 }
 
 %type indexOpToken { AST_IndexOpType }

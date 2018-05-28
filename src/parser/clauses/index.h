@@ -16,6 +16,6 @@ typedef struct {
   AST_IndexOpType operation;
 } AST_IndexNode;
 
-AST_IndexNode* AST_IndexOp(const char *label, const char *property, AST_IndexOpType optype);
+AST_IndexNode* New_AST_IndexNode(const char *label, const char *property, AST_IndexOpType optype);
 
 #endif
