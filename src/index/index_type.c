@@ -10,10 +10,10 @@ void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
 
   const char *label = RedisModule_LoadStringBuffer(rdb, NULL);
   const char *property = RedisModule_LoadStringBuffer(rdb, NULL);
-  SIType value_type = RedisModule_LoadUnsigned(rdb);
-  Index *index = createIndex(label, property, value_type);
+  Index *index = createIndex(label, property);
 
-  loadSkiplist(rdb, index->sl);
+  loadSkiplist(rdb, index->string_sl);
+  loadSkiplist(rdb, index->numeric_sl);
 
   return index;
 }
@@ -123,9 +123,9 @@ void serializeSkiplist(RedisModuleIO *rdb, skiplist *sl) {
 void serializeIndex(RedisModuleIO *rdb, Index *index) {
   RedisModule_SaveStringBuffer(rdb, index->target.label, strlen(index->target.label) + 1);
   RedisModule_SaveStringBuffer(rdb, index->target.property, strlen(index->target.property) + 1);
-  RedisModule_SaveUnsigned(rdb, index->value_type);
 
-  serializeSkiplist(rdb, index->sl);
+  serializeSkiplist(rdb, index->string_sl);
+  serializeSkiplist(rdb, index->numeric_sl);
 }
 
 void loadSkiplist(RedisModuleIO *rdb, skiplist *sl) {
