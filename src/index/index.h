@@ -25,7 +25,7 @@ typedef struct {
 } Index;
 
 void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
-Index* findIndex(const char *label, Vector *properties);
 Index* createIndex(const char *label, const char *property);
+Index* retrieveIndex(const char *label, const char *property);
 
 #endif

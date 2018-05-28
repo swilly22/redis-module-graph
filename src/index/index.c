@@ -88,14 +88,19 @@ Index* createIndex(const char *label, const char *property) {
   return index;
 }
 
-Index* findIndex(const char *label, Vector *properties) {
-  if (!tmp_index_store) return NULL;
-
-  Index *index_to_check;
-  const char *cur_prop;
+Index* retrieveIndex(const char *label, const char *property) {
+  // TODO Once indices are stored in the Redis keyspace, we can replace this loop
+  // with a more efficient lookup
+  Index *current_index = NULL;
   for (int i = 0; i < Vector_Size(tmp_index_store); i ++) {
-    Vector_Get(tmp_index_store, i, &index_to_check);
-    if (strcmp(index_to_check->target.label, label)) continue;
+    Vector_Get(tmp_index_store, i, &current_index);
+    if (!strcmp(label, current_index->target.label) && !strcmp(property, current_index->target.property)) {
+      return current_index;
+    }
+  }
+  return NULL;
+}
+
 
     for (int j = 0; j < Vector_Size(properties); j ++) {
       Vector_Get(properties, j, &cur_prop);
