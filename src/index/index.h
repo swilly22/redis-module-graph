@@ -10,21 +10,22 @@
 #include "../graph/node.h"
 #include "../dep/rax/rax.h"
 
+typedef skiplistIterator IndexIterator;
+
 /*
- * TODO at time of index creation, graph does not exist.
- * Where to store indices? I lean towards external structure -
- * mock it up with a global vector for the moment
- */
+ * TODO Once index serialization code is finished, we will store indices in the keyspace -
+ * for the moment, rely on this global vector */
 Vector *tmp_index_store;
 
 typedef struct {
   IndexTarget target;
-  skiplist *sl;
-  SIType value_type;
+  skiplist *string_sl;
+  skiplist *numeric_sl;
+  IndexIterator *iter;
 } Index;
 
-Index* createIndex(const char *label, const char *property, SIType value_type);
 void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 Index* findIndex(const char *label, Vector *properties);
+Index* createIndex(const char *label, const char *property);
 
 #endif

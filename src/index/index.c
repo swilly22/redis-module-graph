@@ -44,12 +44,9 @@ void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *in
   Node *node;
   EntityProperty *prop;
 
-  // We maintain one index per property per type
-  Index *numeric_index = createIndex(index_label, index_prop, SI_NUMERIC);
-  Index *string_index = createIndex(index_label, index_prop, T_STRING);
+  Index *index = createIndex(index_label, index_prop);
 
-  Vector_Push(tmp_index_store, string_index);
-  Vector_Push(tmp_index_store, numeric_index);
+  Vector_Push(tmp_index_store, index);
 
   int prop_index = 0;
   while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
@@ -69,26 +66,24 @@ void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *in
     SIValue *key = &prop->value;
 
     if (key->type == T_STRING) {
-      skiplistInsert(string_index->sl, key, node);
+      skiplistInsert(index->string_sl, key, node);
     } else if (key->type & SI_NUMERIC) {
-      skiplistInsert(numeric_index->sl, key, node);
+      skiplistInsert(index->numeric_sl, key, node);
     } else { // This property was neither a string nor numeric value; raise a run-time error.
       assert(0);
     }
   }
 }
 
-Index* createIndex(const char *label, const char *property, SIType value_type) {
+Index* createIndex(const char *label, const char *property) {
   Index *index = malloc(sizeof(Index));
   index->target.label = strdup(label);
   index->target.property = strdup(property);
-  index->value_type = value_type;
 
-  if (value_type == T_STRING) {
-    index->sl = skiplistCreate(compareStrings, NULL, compareNodes, cloneKey, freeKey);
-  } else {
-    index->sl = skiplistCreate(compareNumerics, NULL, compareNodes, cloneKey, freeKey);
-  }
+  index->iter = NULL;
+
+  index->string_sl = skiplistCreate(compareStrings, NULL, compareNodes, cloneKey, freeKey);
+  index->numeric_sl = skiplistCreate(compareNumerics, NULL, compareNodes, cloneKey, freeKey);
 
   return index;
 }
