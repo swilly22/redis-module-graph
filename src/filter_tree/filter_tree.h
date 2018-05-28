@@ -79,9 +79,6 @@ Vector* FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *ali
 /* Clones given tree */
 void FilterTree_Clone(const FT_FilterNode *root, FT_FilterNode **clone);
 
-/* Builds vector of properties associated with given alias from tree */
-void FilterTree_FindProperties(const FT_FilterNode *root, const char *alias, Vector *props);
-
 /* Prints tree. */
 void FilterTree_Print(const FT_FilterNode *root);
 
