@@ -262,7 +262,7 @@ FT_FilterNode* BuildFiltersTree(const AST_FilterNode *root) {
         } else {
             return _CreateVaryingFilterNode(root->pn);
         }
-	}
+    }
 
     // root->t == N_COND
     // Create condition node
