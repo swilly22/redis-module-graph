@@ -73,6 +73,9 @@ int applyFilters(const Graph* g, const FT_FilterNode* root);
 /* Checks to see if aliased node is within the filter tree. */
 int FilterTree_ContainsNode(const FT_FilterNode *root, const Vector *aliases);
 
+/* Builds Vector of constant filters associated with specific alias */
+Vector* FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias);
+
 /* Clones given tree */
 void FilterTree_Clone(const FT_FilterNode *root, FT_FilterNode **clone);
 
@@ -86,4 +89,4 @@ FT_FilterNode* FilterTree_MinFilterTree(FT_FilterNode *root, Vector *aliases);
 
 void FilterTree_Free(FT_FilterNode *root);
 
-#endif // _FILTER_TREE_H 
+#endif // _FILTER_TREE_H

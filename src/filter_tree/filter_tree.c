@@ -374,6 +374,33 @@ int FilterTree_ContainsNode(const FT_FilterNode *root, const Vector *aliases) {
             FilterTree_ContainsNode(RightChild(root), aliases));
 }
 
+void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias, Vector *filters) {
+  if(root == NULL) {
+    return;
+  }
+  if (IsNodeVaryingPredicate(root)) {
+    return;
+  }
+
+  if (IsNodeConstantPredicate(root) && (!strcmp(alias, root->pred.Lop.alias))) {
+    Vector_Push(filters, &root->pred);
+    return;
+  }
+
+  _FilterTree_CollectAliasConsts(root->cond.left, alias, filters);
+  _FilterTree_CollectAliasConsts(root->cond.right, alias, filters);
+}
+
+/*
+ * Traverse the FilterTree to collect all constant predicates associated with the given alias.
+ * Populates a Vector of FT_PredicateNode pointers.  */
+Vector* FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias) {
+  Vector *filters = NewVector(FT_PredicateNode*, 1);
+  _FilterTree_CollectAliasConsts(root, alias, filters);
+
+  return filters;
+}
+
 void _FilterTree_Print(const FT_FilterNode *root, int ident) {
     // Ident
     printf("%*s", ident, "");
