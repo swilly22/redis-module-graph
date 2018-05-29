@@ -35,8 +35,8 @@ typedef struct {
 			char* property;
 		} Rop;
 	};
-	FT_CompareValueType t; 	/* Comapred value type, constant/node. */
-	CmpFunc cf;				/* Compare function, determins relation between val and element property. */
+	FT_CompareValueType t; 	/* Compared value type, constant/node. */
+	CmpFunc cf;				/* Compare function, determines relation between val and element property. */
 } FT_PredicateNode;
 
 typedef struct {
@@ -51,7 +51,7 @@ struct FT_FilterNode {
     FT_PredicateNode pred;
     FT_ConditionNode cond;
   };
-  FT_FilterNodeType t;	/* Determins actual type of this node. */
+  FT_FilterNodeType t;	/* Determines actual type of this node. */
 };
 
 typedef struct FT_FilterNode FT_FilterNode;
@@ -75,6 +75,9 @@ int FilterTree_ContainsNode(const FT_FilterNode *root, const Vector *aliases);
 
 /* Clones given tree */
 void FilterTree_Clone(const FT_FilterNode *root, FT_FilterNode **clone);
+
+/* Builds vector of properties associated with given alias from tree */
+void FilterTree_FindProperties(const FT_FilterNode *root, const char *alias, Vector *props);
 
 /* Prints tree. */
 void FilterTree_Print(const FT_FilterNode *root);
