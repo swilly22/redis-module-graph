@@ -119,26 +119,26 @@ void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *ind
  * to see if a scan operation can employ an index. This function will return a
  * struct containing an appropriate index (if any) and the boundaries for setting its iterator.
  */
-IndexBounds selectIndexFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
+IndexBounds Index_BuildConstraintsFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
   IndexBounds bounds;
   bounds.lower = bounds.upper = NULL;
   bounds.index = NULL;
 
   Index *chosen_index = NULL;
-  FT_PredicateNode *current;
+  FT_PredicateNode *const_filter;
   while (Vector_Size(filters) > 0) {
-    Vector_Pop(filters, &current);
+    Vector_Pop(filters, &const_filter);
     if (!chosen_index) {
       // Look this property up to see if it has been indexed (using the label rather than the node alias)
-      chosen_index = Index_Get(ctx, graphName, label, current->Lop.property);
+      chosen_index = Index_Get(ctx, graphName, label, const_filter->Lop.property);
       if (chosen_index == NULL) continue;
 
       // TODO Currently, we will default to using the first valid index we find -
       // in the future, it would be worthwhile to compare all viable indices and
       // attempt to choose the most efficient one
       bounds.index = chosen_index;
-      bounds.iter_type = current->constVal.type;
-    } else if (strcmp(chosen_index->target.property, current->Lop.property)) {
+      bounds.iter_type = const_filter->constVal.type;
+    } else if (strcmp(chosen_index->target.property, const_filter->Lop.property)) {
       // This filter's property does not match our index
       continue;
     }
@@ -149,28 +149,28 @@ IndexBounds selectIndexFromFilters(RedisModuleCtx *ctx, const char *graphName, V
      * Currently, this is not a safe assumption here or for the FilterTree as a whole
      * (a query like "MATCH (p:person) WHERE p.age < 50 AND p.age != "string"" is unhandled)
      */
-    switch(current->op) {
+    switch(const_filter->op) {
       case EQ:
-        bounds.lower = &current->constVal;
-        bounds.upper = &current->constVal;
+        bounds.lower = &const_filter->constVal;
+        bounds.upper = &const_filter->constVal;
         bounds.minExclusive = bounds.maxExclusive = 0;
         // This is the best possible bound; no need to look further
         return bounds;
 
       case GT | GE:
-        if (bounds.lower && (current->cf(bounds.lower, &current->constVal) > 0)) {
+        if (bounds.lower && (const_filter->cf(bounds.lower, &const_filter->constVal) > 0)) {
           break; // Don't set new bound unless it narrows the range
         }
-        bounds.lower = &current->constVal;
-        bounds.minExclusive = current->op == GT ? 1 : 0;
+        bounds.lower = &const_filter->constVal;
+        bounds.minExclusive = const_filter->op == GT ? 1 : 0;
         break;
 
       case LT | LE:
-        if (bounds.upper && (current->cf(bounds.upper, &current->constVal) < 0)) {
+        if (bounds.upper && (const_filter->cf(bounds.upper, &const_filter->constVal) < 0)) {
           break; // Don't set new bound unless it narrows the range
         }
-        bounds.upper = &current->constVal;
-        bounds.maxExclusive = current->op == LT ? 1 : 0;
+        bounds.upper = &const_filter->constVal;
+        bounds.maxExclusive = const_filter->op == LT ? 1 : 0;
         break;
     }
   }

@@ -33,6 +33,6 @@ typedef struct {
 
 void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 /* Select an Index and range based on filters associated with Node */
-IndexBounds selectIndexFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label);
+IndexBounds Index_BuildConstraintsFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label);
 
 #endif
