@@ -65,12 +65,7 @@ AST_Query* _parse_query(RedisModuleCtx *ctx, const char *query, const char *grap
 int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexNode) {
   switch(indexNode->operation) {
     case CREATE_INDEX:
-      if (!tmp_index_store) {
-        tmp_index_store = NewVector(Index*, 1);
-      } else {
-        // TODO confirm that indices have not already been built for this property
-      }
-      indexProperty(ctx, graphName, indexNode);
+      Index_Create(ctx, graphName, indexNode);
       break;
     default:
       RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.\n");
@@ -174,9 +169,7 @@ int MGraph_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (!ast) return REDISMODULE_OK;
 
     if (ast->indexNode != NULL) { // index operation
-        int success = _index_operation(ctx, graphName, ast->indexNode);
-        // return from this function if we have already enqueued a reply
-        if (!success) return REDISMODULE_OK;
+        _index_operation(ctx, graphName, ast->indexNode);
     } else { // operation requiring execution plan
         ExecutionPlan *plan = NewExecutionPlan(ctx, graphName, ast);
         ResultSet* resultSet = ExecutionPlan_Execute(plan);
@@ -277,8 +270,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if(RedisModule_CreateCommand(ctx, "graph.EXPLAIN", MGraph_Explain, "write", 1, 1, 1) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
-
-    tmp_index_store = NULL;
 
     return REDISMODULE_OK;
 }

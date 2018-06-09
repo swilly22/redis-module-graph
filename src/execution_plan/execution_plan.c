@@ -387,12 +387,12 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
             OpNode *scan_op = NULL;
             Node **graph_node = Graph_GetNodeRef(graph, node);
             if(node->label) {
-                if (execution_plan->filter_tree != NULL && tmp_index_store) {
+                if (execution_plan->filter_tree != NULL) {
                     /* If a filter tree has been built and an index store exists,
                      * try to build an IndexScan */
                     Vector *filters = FilterTree_CollectAliasConsts(execution_plan->filter_tree,
                                                                     Graph_GetNodeAlias(graph, *graph_node));
-                    IndexBounds bounds = selectIndexFromFilters(filters, node->label);
+                    IndexBounds bounds = selectIndexFromFilters(ctx, graph_name, filters, node->label);
                     Vector_Free(filters);
                     if (bounds.index != NULL) {
                         scan_op = NewOpNode(NewIndexScanOp(graph, graph_node, &bounds));

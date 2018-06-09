@@ -12,12 +12,9 @@
 #include "../filter_tree/filter_tree.h"
 #include "../parser/grammar.h" // required for the definition of filter operations (LT, GT, etc)
 
-typedef skiplistIterator IndexIterator;
+#define INDEX_PREFIX "redis_graph_INDEX"
 
-/*
- * TODO Once index serialization code is finished, we will store indices in the keyspace -
- * for the moment, rely on this global vector */
-Vector *tmp_index_store;
+typedef skiplistIterator IndexIterator;
 
 typedef struct {
   IndexTarget target;
@@ -34,10 +31,8 @@ typedef struct {
   SIType iter_type;
 } IndexBounds;
 
-void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
-Index* createIndex(const char *label, const char *property);
-Index* retrieveIndex(const char *label, const char *property);
+void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 /* Select an Index and range based on filters associated with Node */
-IndexBounds selectIndexFromFilters(Vector *filters, const char *label);
+IndexBounds selectIndexFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label);
 
 #endif

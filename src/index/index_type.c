@@ -10,7 +10,10 @@ void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
 
   const char *label = RedisModule_LoadStringBuffer(rdb, NULL);
   const char *property = RedisModule_LoadStringBuffer(rdb, NULL);
-  Index *index = createIndex(label, property);
+
+  Index *index = malloc(sizeof(Index));
+  index->target.label = strdup(label);
+  index->target.property = strdup(property);
 
   loadSkiplist(rdb, index->string_sl);
   loadSkiplist(rdb, index->numeric_sl);
@@ -35,10 +38,10 @@ void IndexType_Free(void *value) {
 
 int IndexType_Register(RedisModuleCtx *ctx) {
   RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-    .rdb_load = IndexType_RdbLoad,
-    .rdb_save = IndexType_RdbSave,
-    .aof_rewrite = IndexType_AofRewrite,
-    .free = IndexType_Free};
+                               .rdb_load = IndexType_RdbLoad,
+                               .rdb_save = IndexType_RdbSave,
+                               .aof_rewrite = IndexType_AofRewrite,
+                               .free = IndexType_Free};
 
   IndexRedisModuleType = RedisModule_CreateDataType(ctx, "indextype", INDEX_TYPE_ENCODING_VERSION, &tm);
 

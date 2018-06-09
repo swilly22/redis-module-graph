@@ -1,4 +1,5 @@
 #include "index.h"
+#include "index_type.h"
 
 int compareNodes(const void *a, const void *b) {
   return ((Node*)a)->id - ((Node*)b)->id;
@@ -29,12 +30,37 @@ void freeKey(void *key) {
   SIValue_Free(key);
 }
 
+RedisModuleKey* Index_LookupKey(RedisModuleCtx *ctx, const char *graph, const char *label, const char *property) {
+  char *strKey;
+  asprintf(&strKey, "%s_%s_%s_%s", INDEX_PREFIX, graph, label, property);
+
+  RedisModuleString *rmIndexId = RedisModule_CreateString(ctx, strKey, strlen(strKey));
+  free(strKey);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, rmIndexId, REDISMODULE_WRITE);
+  RedisModule_FreeString(ctx, rmIndexId);
+
+  return key;
+}
+
+Index* Index_Get(RedisModuleCtx *ctx, const char *graph, const char *label, const char *property) {
+  RedisModuleKey *key = Index_LookupKey(ctx, graph, label, property);
+  Index *idx = NULL;
+
+  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+    idx = RedisModule_ModuleTypeGetValue(key);
+  }
+  RedisModule_CloseKey(key);
+
+  return idx;
+}
+
 // Create and populate index for specified property
 // (This function will create separate string and numeric indices if property has mixed types)
-void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp) {
-  const char *index_label = indexOp->target.label;
-  const char *index_prop = indexOp->target.property;
-  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, index_label);
+void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp) {
+  const char *label = indexOp->target.label;
+  const char *prop_str = indexOp->target.property;
+  LabelStore *store = LabelStore_Get(ctx, STORE_NODE, graphName, label);
 
   LabelStoreIterator it;
   LabelStore_Scan(store, &it);
@@ -44,18 +70,31 @@ void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *in
   Node *node;
   EntityProperty *prop;
 
-  Index *index = createIndex(index_label, index_prop);
+  RedisModuleKey *key = Index_LookupKey(ctx, graphName, label, prop_str);
+  // Do nothing if this index already exists
+  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+    RedisModule_CloseKey(key);
+    return;
+  }
 
-  Vector_Push(tmp_index_store, index);
+  Index *index = malloc(sizeof(Index));
+  RedisModule_ModuleTypeSetValue(key, IndexRedisModuleType, index);
+  RedisModule_CloseKey(key);
+
+  index->target.label = strdup(label);
+  index->target.property = strdup(prop_str);
+
+  index->string_sl = skiplistCreate(compareStrings, NULL, compareNodes, cloneKey, freeKey);
+  index->numeric_sl = skiplistCreate(compareNumerics, NULL, compareNodes, cloneKey, freeKey);
 
   int prop_index = 0;
   while(LabelStoreIterator_Next(&it, &nodeId, &nodeIdLen, (void**)&node)) {
     // If the sought property is at a different offset than it occupied in the previous node,
     // then seek and update
-    if (strcmp(index_prop, node->properties[prop_index].name)) {
+    if (strcmp(prop_str, node->properties[prop_index].name)) {
       for (int i = 0; i < node->prop_count; i ++) {
         prop = node->properties + i;
-        if (!strcmp(index_prop, prop->name)) {
+        if (!strcmp(prop_str, prop->name)) {
           prop_index = i;
           break;
         }
@@ -75,38 +114,12 @@ void indexProperty(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *in
   }
 }
 
-Index* createIndex(const char *label, const char *property) {
-  Index *index = malloc(sizeof(Index));
-  index->target.label = strdup(label);
-  index->target.property = strdup(property);
-
-  index->iter = NULL;
-
-  index->string_sl = skiplistCreate(compareStrings, NULL, compareNodes, cloneKey, freeKey);
-  index->numeric_sl = skiplistCreate(compareNumerics, NULL, compareNodes, cloneKey, freeKey);
-
-  return index;
-}
-
-Index* retrieveIndex(const char *label, const char *property) {
-  // TODO Once indices are stored in the Redis keyspace, we can replace this loop
-  // with a more efficient lookup
-  Index *current_index = NULL;
-  for (int i = 0; i < Vector_Size(tmp_index_store); i ++) {
-    Vector_Get(tmp_index_store, i, &current_index);
-    if (!strcmp(label, current_index->target.label) && !strcmp(property, current_index->target.property)) {
-      return current_index;
-    }
-  }
-  return NULL;
-}
-
 /*
  * Before the ExecutionPlan has been constructed, we can analyze the FilterTree
  * to see if a scan operation can employ an index. This function will return a
  * struct containing an appropriate index (if any) and the boundaries for setting its iterator.
  */
-IndexBounds selectIndexFromFilters(Vector *filters, const char *label) {
+IndexBounds selectIndexFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
   IndexBounds bounds;
   bounds.lower = bounds.upper = NULL;
   bounds.index = NULL;
@@ -117,7 +130,7 @@ IndexBounds selectIndexFromFilters(Vector *filters, const char *label) {
     Vector_Pop(filters, &current);
     if (!chosen_index) {
       // Look this property up to see if it has been indexed (using the label rather than the node alias)
-      chosen_index = retrieveIndex(label, current->Lop.property);
+      chosen_index = Index_Get(ctx, graphName, label, current->Lop.property);
       if (chosen_index == NULL) continue;
 
       // TODO Currently, we will default to using the first valid index we find -
