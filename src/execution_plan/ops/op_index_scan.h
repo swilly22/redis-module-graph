@@ -2,10 +2,8 @@
 #define __OP_INDEX_SCAN_H
 
 #include "op.h"
-#include "../../redismodule.h"
 #include "../../graph/graph.h"
 #include "../../graph/node.h"
-#include "../../stores/store.h"
 #include "../../index/index.h"
 
 

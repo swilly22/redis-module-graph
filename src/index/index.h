@@ -23,7 +23,6 @@ typedef struct {
   IndexTarget target;
   skiplist *string_sl;
   skiplist *numeric_sl;
-  IndexIterator *iter;
 } Index;
 
 typedef struct {
