@@ -177,3 +177,37 @@ IndexBounds Index_BuildConstraintsFromFilters(RedisModuleCtx *ctx, const char *g
 
   return bounds;
 }
+
+IndexIterator* IndexIterator_Create(IndexBounds *index_bundle) {
+  IndexIterator *iter;
+
+  Index *idx = index_bundle->index;
+  SIValue *upper = NULL;
+  // Only the upper bound must be cloned, as the lower bound is only accessed in the skiplistIterateRange call directly below
+  if (index_bundle->upper) {
+    upper = malloc(sizeof(SIValue));
+    *upper = SI_Clone(*index_bundle->upper);
+  }
+
+  if (index_bundle->iter_type == T_STRING) {
+    iter = skiplistIterateRange(idx->string_sl, index_bundle->lower, upper, index_bundle->minExclusive, index_bundle->maxExclusive);
+  } else if (index_bundle->iter_type & SI_NUMERIC) {
+    iter = skiplistIterateRange(idx->numeric_sl, index_bundle->lower, upper, index_bundle->minExclusive, index_bundle->maxExclusive);
+  } else {
+    assert(0);
+  }
+
+  return iter;
+}
+
+void* IndexIterator_Next(IndexIterator *iter) {
+  return skiplistIterator_Next(iter);
+}
+
+void IndexIterator_Reset(IndexIterator *iter) {
+  skiplistIterate_Reset(iter);
+}
+
+void IndexIterator_Free(IndexIterator *iter) {
+  skiplistIterate_Free(iter);
+}

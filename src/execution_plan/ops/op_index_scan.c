@@ -4,27 +4,14 @@ OpBase *NewIndexScanOp(Graph *g, Node **node, IndexBounds *index_data) {
   return (OpBase*)NewIndexScan(g, node, index_data);
 }
 
-IndexScan* NewIndexScan(Graph *g, Node **node, IndexBounds *index_data) {
+IndexScan* NewIndexScan(Graph *g, Node **node, IndexBounds *index_bundle) {
 
   IndexScan *indexScan = malloc(sizeof(IndexScan));
   indexScan->node = node;
   indexScan->_node = *node;
 
-  indexScan->index = index_data->index;
-  SIValue *upper = NULL;
-  // Only the upper bound must be cloned, as the lower bound is only accessed in the skiplistIterateRange call directly below
-  if (index_data->upper) {
-    upper = malloc(sizeof(SIValue));
-    *upper = SI_Clone(*index_data->upper);
-  }
-
-  if (index_data->iter_type == T_STRING) {
-    indexScan->iter = skiplistIterateRange(indexScan->index->string_sl, index_data->lower, upper, index_data->minExclusive, index_data->maxExclusive);
-  } else if (index_data->iter_type & SI_NUMERIC) {
-    indexScan->iter = skiplistIterateRange(indexScan->index->numeric_sl, index_data->lower, upper, index_data->minExclusive, index_data->maxExclusive);
-  } else {
-    assert(0);
-  }
+  indexScan->index = index_bundle->index;
+  indexScan->iter = IndexIterator_Create(index_bundle);
 
   // Set our Op operations
   indexScan->op.name = "Index Scan";
@@ -47,7 +34,7 @@ OpResult IndexScanConsume(OpBase *opBase, Graph* graph) {
   }
 
   /* Update node */
-  *op->node = skiplistIterator_Next(op->iter);
+  *op->node = IndexIterator_Next(op->iter);
 
   if(*op->node == NULL) {
     return OP_DEPLETED;
@@ -61,13 +48,13 @@ OpResult IndexScanReset(OpBase *ctx) {
 
   /* Restore original node. */
   *indexScan->node = indexScan->_node;
-  skiplistIterate_Reset(indexScan->iter);
+  IndexIterator_Reset(indexScan->iter);
 
   return OP_OK;
 }
 
 void IndexScanFree(OpBase *op) {
   IndexScan *indexScan = (IndexScan *)op;
-  skiplistIterate_Free(indexScan->iter);
+  IndexIterator_Free(indexScan->iter);
   free(indexScan);
 }
