@@ -47,7 +47,7 @@ Index* Index_Get(RedisModuleCtx *ctx, const char *graph, const char *label, cons
   RedisModuleKey *key = Index_LookupKey(ctx, graph, label, property);
   Index *idx = NULL;
 
-  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+  if (RedisModule_ModuleTypeGetType(key) == IndexRedisModuleType) {
     idx = RedisModule_ModuleTypeGetValue(key);
   }
   RedisModule_CloseKey(key);
@@ -72,7 +72,7 @@ void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *ind
 
   RedisModuleKey *key = Index_LookupKey(ctx, graphName, label, prop_str);
   // Do nothing if this index already exists
-  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+  if (RedisModule_ModuleTypeGetType(key) == IndexRedisModuleType) {
     RedisModule_CloseKey(key);
     return;
   }
