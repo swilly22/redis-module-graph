@@ -392,10 +392,10 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
                      * try to build an IndexScan */
                     Vector *filters = FilterTree_CollectAliasConsts(execution_plan->filter_tree,
                                                                     Graph_GetNodeAlias(graph, *graph_node));
-                    IndexBounds bounds = Index_BuildConstraintsFromFilters(ctx, graph_name, filters, node->label);
+                    IndexIterator *iter = Index_IntersectFilters(ctx, graph_name, filters, node->label);
                     Vector_Free(filters);
-                    if (bounds.index != NULL) {
-                        scan_op = NewOpNode(NewIndexScanOp(graph, graph_node, &bounds));
+                    if (iter != NULL) {
+                        scan_op = NewOpNode(NewIndexScanOp(graph, graph_node, iter));
                     }
                 }
                 if (scan_op == NULL) {

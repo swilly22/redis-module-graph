@@ -22,20 +22,10 @@ typedef struct {
   skiplist *numeric_sl;
 } Index;
 
-typedef struct {
-  Index *index;
-  SIValue *lower;
-  SIValue *upper;
-  int minExclusive;
-  int maxExclusive;
-  SIType iter_type;
-} IndexBounds;
-
 void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *indexOp);
 /* Select an Index and range based on filters associated with Node */
-IndexBounds Index_BuildConstraintsFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label);
+IndexIterator* Index_IntersectFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label);
 
-IndexIterator* IndexIterator_Create(IndexBounds *index_bundle);
 void* IndexIterator_Next(IndexIterator *iter);
 void IndexIterator_Reset(IndexIterator *iter);
 void IndexIterator_Free(IndexIterator *iter);

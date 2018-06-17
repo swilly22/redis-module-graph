@@ -1,17 +1,15 @@
 #include "op_index_scan.h"
 
-OpBase *NewIndexScanOp(Graph *g, Node **node, IndexBounds *index_data) {
-  return (OpBase*)NewIndexScan(g, node, index_data);
+OpBase *NewIndexScanOp(Graph *g, Node **node, IndexIterator *iter) {
+  return (OpBase*)NewIndexScan(g, node, iter);
 }
 
-IndexScan* NewIndexScan(Graph *g, Node **node, IndexBounds *index_bundle) {
+IndexScan* NewIndexScan(Graph *g, Node **node, IndexIterator *iter) {
 
   IndexScan *indexScan = malloc(sizeof(IndexScan));
   indexScan->node = node;
   indexScan->_node = *node;
-
-  indexScan->index = index_bundle->index;
-  indexScan->iter = IndexIterator_Create(index_bundle);
+  indexScan->iter = iter;
 
   // Set our Op operations
   indexScan->op.name = "Index Scan";

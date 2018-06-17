@@ -114,90 +114,54 @@ void Index_Create(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *ind
   }
 }
 
-/*
- * Before the ExecutionPlan has been constructed, we can analyze the FilterTree
- * to see if a scan operation can employ an index. This function will return a
- * struct containing an appropriate index (if any) and the boundaries for setting its iterator.
- */
-IndexBounds Index_BuildConstraintsFromFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
-  IndexBounds bounds;
-  bounds.lower = bounds.upper = NULL;
-  bounds.index = NULL;
+IndexIterator* IndexIterator_CreateFromFilter(Index *idx, FT_PredicateNode *filter) {
+  skiplist *target = filter->constVal.type == T_STRING ? idx->string_sl : idx->numeric_sl;
+  SIValue *bound;
 
-  Index *chosen_index = NULL;
-  FT_PredicateNode *const_filter;
-  while (Vector_Size(filters) > 0) {
-    Vector_Pop(filters, &const_filter);
-    if (!chosen_index) {
-      // Look this property up to see if it has been indexed (using the label rather than the node alias)
-      chosen_index = Index_Get(ctx, graphName, label, const_filter->Lop.property);
-      if (chosen_index == NULL) continue;
+  switch(filter->op) {
+    case EQ:
+      bound = malloc(sizeof(SIValue));
+      *bound = SI_Clone(filter->constVal);
+      return skiplistIterateRange(target, bound, bound, 0, 0);
 
-      // TODO Currently, we will default to using the first valid index we find -
-      // in the future, it would be worthwhile to compare all viable indices and
-      // attempt to choose the most efficient one
-      bounds.index = chosen_index;
-      bounds.iter_type = const_filter->constVal.type;
-    } else if (strcmp(chosen_index->target.property, const_filter->Lop.property)) {
-      // This filter's property does not match our index
-      continue;
-    }
+    case LE:
+      bound = malloc(sizeof(SIValue));
+      *bound = SI_Clone(filter->constVal);
+      return skiplistIterateRange(target, NULL, bound, 0, 0);
 
-    /*
-     * TODO This block assumes that multiple filters specified on the same alias-property pair
-     * can be validly compared with either filter's comparator function.
-     * Currently, this is not a safe assumption here or for the FilterTree as a whole
-     * (a query like "MATCH (p:person) WHERE p.age < 50 AND p.age != "string"" is unhandled)
-     */
-    switch(const_filter->op) {
-      case EQ:
-        bounds.lower = &const_filter->constVal;
-        bounds.upper = &const_filter->constVal;
-        bounds.minExclusive = bounds.maxExclusive = 0;
-        // This is the best possible bound; no need to look further
-        return bounds;
+    case LT:
+      bound = malloc(sizeof(SIValue));
+      *bound = SI_Clone(filter->constVal);
+      return skiplistIterateRange(target, NULL, bound, 0, 1);
 
-      case GT | GE:
-        if (bounds.lower && (const_filter->cf(bounds.lower, &const_filter->constVal) > 0)) {
-          break; // Don't set new bound unless it narrows the range
-        }
-        bounds.lower = &const_filter->constVal;
-        bounds.minExclusive = const_filter->op == GT ? 1 : 0;
-        break;
+    case GE:
+      return skiplistIterateRange(target, &filter->constVal, NULL, 0, 0);
 
-      case LT | LE:
-        if (bounds.upper && (const_filter->cf(bounds.upper, &const_filter->constVal) < 0)) {
-          break; // Don't set new bound unless it narrows the range
-        }
-        bounds.upper = &const_filter->constVal;
-        bounds.maxExclusive = const_filter->op == LT ? 1 : 0;
-        break;
-    }
+    case GT:
+      return skiplistIterateRange(target, &filter->constVal, NULL, 1, 0);
   }
 
-  return bounds;
+  return NULL;
 }
 
-IndexIterator* IndexIterator_Create(IndexBounds *index_bundle) {
-  IndexIterator *iter;
-
-  Index *idx = index_bundle->index;
-  SIValue *upper = NULL;
-  // Only the upper bound must be cloned, as the lower bound is only accessed in the skiplistIterateRange call directly below
-  if (index_bundle->upper) {
-    upper = malloc(sizeof(SIValue));
-    *upper = SI_Clone(*index_bundle->upper);
+/*
+ * Before the ExecutionPlan has been constructed, we can analyze the FilterTree
+ * to see if a scan operation can employ an index. This function will return the iterator
+ * required for constructing an indexScan operation.
+ */
+IndexIterator* Index_IntersectFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
+  FT_PredicateNode *const_filter;
+  Index *idx;
+  while (Vector_Size(filters) > 0) {
+    Vector_Pop(filters, &const_filter);
+    // Look this property up to see if it has been indexed (using the label rather than the node alias)
+    if ((idx = Index_Get(ctx, graphName, label, const_filter->Lop.property)) != NULL) {
+      // Build an iterator from the first matching index
+      return IndexIterator_CreateFromFilter(idx, const_filter);
+    }
   }
 
-  if (index_bundle->iter_type == T_STRING) {
-    iter = skiplistIterateRange(idx->string_sl, index_bundle->lower, upper, index_bundle->minExclusive, index_bundle->maxExclusive);
-  } else if (index_bundle->iter_type & SI_NUMERIC) {
-    iter = skiplistIterateRange(idx->numeric_sl, index_bundle->lower, upper, index_bundle->minExclusive, index_bundle->maxExclusive);
-  } else {
-    assert(0);
-  }
-
-  return iter;
+  return NULL;
 }
 
 void* IndexIterator_Next(IndexIterator *iter) {
