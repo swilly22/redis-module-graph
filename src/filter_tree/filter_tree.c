@@ -378,7 +378,18 @@ void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias
   if(root == NULL) {
     return;
   }
+
   if (IsNodeVaryingPredicate(root)) {
+    return;
+  }
+
+  // OR conditions in the filter tree make the current indexScan operation unsafe,
+  // as no reliable lower or upper bound can be set.
+  if (IsNodeCondition(root) && root->cond.op == OR) {
+    // TODO this is a little hacky, but as 'filters' is a value here, it cannot be directly
+    // set to NULL. Setting its size to 0 will bypass index lookups, and the vector will still
+    // be properly freed afterwards
+    filters->top = 0;
     return;
   }
 

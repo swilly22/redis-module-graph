@@ -154,7 +154,7 @@ IndexIterator* IndexIterator_CreateFromFilter(Index *idx, FT_PredicateNode *filt
 IndexIterator* Index_IntersectFilters(RedisModuleCtx *ctx, const char *graphName, Vector *filters, const char *label) {
   FT_PredicateNode *const_filter;
   Index *idx;
-  while (Vector_Size(filters) > 0) {
+  while (filters && Vector_Size(filters) > 0) {
     Vector_Pop(filters, &const_filter);
     // Look this property up to see if it has been indexed (using the label rather than the node alias)
     if ((idx = Index_Get(ctx, graphName, label, const_filter->Lop.property)) != NULL) {
