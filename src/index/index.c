@@ -120,6 +120,8 @@ IndexIterator* IndexIterator_CreateFromFilter(Index *idx, FT_PredicateNode *filt
 
   switch(filter->op) {
     case EQ:
+      // Only cases that set an upper bound for the skiplist require a cloned value,
+      // as the lower bound is only checked within the skiplistIterateRange call here
       bound = malloc(sizeof(SIValue));
       *bound = SI_Clone(filter->constVal);
       return skiplistIterateRange(target, bound, bound, 0, 0);
