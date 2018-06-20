@@ -27,10 +27,6 @@ IndexScan* NewIndexScan(Graph *g, Node **node, IndexIterator *iter) {
 OpResult IndexScanConsume(OpBase *opBase, Graph* graph) {
   IndexScan *op = (IndexScan*)opBase;
 
-  if(op->iter == NULL) {
-    return OP_DEPLETED;
-  }
-
   /* Update node */
   *op->node = IndexIterator_Next(op->iter);
 
