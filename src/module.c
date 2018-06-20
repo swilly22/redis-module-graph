@@ -66,11 +66,12 @@ int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
   switch(indexNode->operation) {
     case CREATE_INDEX:
       Index_Create(ctx, graphName, indexNode);
+      // Set up array response for printing statistics
       RedisModule_ReplyWithArray(ctx, 1);
       break;
     default:
       RedisModule_ReplyWithArray(ctx, 2);
-      RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.\n");
+      RedisModule_ReplyWithError(ctx, "Redis-Graph only supports index creation operations at present.");
       return 0;
   }
 
@@ -80,9 +81,9 @@ int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
 char* _index_operation_print(AST_IndexNode *indexNode) {
   switch(indexNode->operation) {
     case CREATE_INDEX:
-      return "Create Index\n";
+      return "Create Index";
     default:
-      return "Drop Index\n";
+      return "Drop Index";
   }
 }
 
