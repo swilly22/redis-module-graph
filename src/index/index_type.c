@@ -3,54 +3,6 @@
 /* declaration of the type for redis registration. */
 RedisModuleType *IndexRedisModuleType;
 
-void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
-  if (encver != 0) {
-    return NULL;
-  }
-
-  const char *label = RedisModule_LoadStringBuffer(rdb, NULL);
-  const char *property = RedisModule_LoadStringBuffer(rdb, NULL);
-
-  Index *index = malloc(sizeof(Index));
-  index->target.label = strdup(label);
-  index->target.property = strdup(property);
-
-  loadSkiplist(rdb, index->string_sl);
-  loadSkiplist(rdb, index->numeric_sl);
-
-  return index;
-}
-
-void IndexType_RdbSave(RedisModuleIO *rdb, void *value) {
-  Index *index = value;
-
-  serializeIndex(rdb, index);
-}
-
-void IndexType_AofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-  // TODO: implement.
-}
-
-void IndexType_Free(void *value) {
-  Index *index = value;
-  // free
-}
-
-int IndexType_Register(RedisModuleCtx *ctx) {
-  RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-                               .rdb_load = IndexType_RdbLoad,
-                               .rdb_save = IndexType_RdbSave,
-                               .aof_rewrite = IndexType_AofRewrite,
-                               .free = IndexType_Free};
-
-  IndexRedisModuleType = RedisModule_CreateDataType(ctx, "indextype", INDEX_TYPE_ENCODING_VERSION, &tm);
-
-  if (IndexRedisModuleType == NULL) {
-    return REDISMODULE_ERR;
-  }
-  return REDISMODULE_OK;
-}
-
 void saveSIValue(RedisModuleIO *rdb, SIValue *v) {
   // Elem 1: key type
   RedisModule_SaveUnsigned(rdb, v->type);
@@ -147,4 +99,52 @@ void loadSkiplist(RedisModuleIO *rdb, skiplist *sl) {
       // skiplistInsert(sl, key, node);
     }
   }
+}
+
+void *IndexType_RdbLoad(RedisModuleIO *rdb, int encver) {
+  if (encver != 0) {
+    return NULL;
+  }
+
+  const char *label = RedisModule_LoadStringBuffer(rdb, NULL);
+  const char *property = RedisModule_LoadStringBuffer(rdb, NULL);
+
+  Index *index = malloc(sizeof(Index));
+  index->target.label = strdup(label);
+  index->target.property = strdup(property);
+
+  loadSkiplist(rdb, index->string_sl);
+  loadSkiplist(rdb, index->numeric_sl);
+
+  return index;
+}
+
+void IndexType_RdbSave(RedisModuleIO *rdb, void *value) {
+  Index *index = value;
+
+  serializeIndex(rdb, index);
+}
+
+void IndexType_AofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+  // TODO: implement.
+}
+
+void IndexType_Free(void *value) {
+  Index *index = value;
+  // free
+}
+
+int IndexType_Register(RedisModuleCtx *ctx) {
+  RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
+                               .rdb_load = IndexType_RdbLoad,
+                               .rdb_save = IndexType_RdbSave,
+                               .aof_rewrite = IndexType_AofRewrite,
+                               .free = IndexType_Free};
+
+  IndexRedisModuleType = RedisModule_CreateDataType(ctx, "indextype", INDEX_TYPE_ENCODING_VERSION, &tm);
+
+  if (IndexRedisModuleType == NULL) {
+    return REDISMODULE_ERR;
+  }
+  return REDISMODULE_OK;
 }

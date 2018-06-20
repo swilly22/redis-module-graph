@@ -374,7 +374,7 @@ int FilterTree_ContainsNode(const FT_FilterNode *root, const Vector *aliases) {
             FilterTree_ContainsNode(RightChild(root), aliases));
 }
 
-void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias, Vector *filters) {
+void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias, Vector **filters) {
   if(root == NULL) {
     return;
   }
@@ -386,15 +386,13 @@ void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias
   // OR conditions in the filter tree make the current indexScan operation unsafe,
   // as no reliable lower or upper bound can be set.
   if (IsNodeCondition(root) && root->cond.op == OR) {
-    // TODO this is a little hacky, but as 'filters' is a value here, it cannot be directly
-    // set to NULL. Setting its size to 0 will bypass index lookups, and the vector will still
-    // be properly freed afterwards
-    filters->top = 0;
+    Vector_Free(*filters);
+    *filters = NULL;
     return;
   }
 
   if (IsNodeConstantPredicate(root) && (!strcmp(alias, root->pred.Lop.alias))) {
-    Vector_Push(filters, &root->pred);
+    Vector_Push(*filters, &root->pred);
     return;
   }
 
@@ -407,7 +405,7 @@ void _FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias
  * Populates a Vector of FT_PredicateNode pointers.  */
 Vector* FilterTree_CollectAliasConsts(const FT_FilterNode *root, const char *alias) {
   Vector *filters = NewVector(FT_PredicateNode*, 1);
-  _FilterTree_CollectAliasConsts(root, alias, filters);
+  _FilterTree_CollectAliasConsts(root, alias, &filters);
 
   return filters;
 }
