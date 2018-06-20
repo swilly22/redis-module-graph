@@ -392,7 +392,7 @@ ExecutionPlan *NewExecutionPlan(RedisModuleCtx *ctx, const char *graph_name, AST
                      * try to build an IndexScan */
                     Vector *filters = FilterTree_CollectAliasConsts(execution_plan->filter_tree,
                                                                     Graph_GetNodeAlias(graph, *graph_node));
-                    if (filters) {
+                    if (filters != NULL) {
                         IndexIterator *iter = Index_IntersectFilters(ctx, graph_name, filters, node->label);
                         Vector_Free(filters);
                         if (iter != NULL) {
