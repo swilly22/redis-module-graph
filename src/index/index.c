@@ -166,6 +166,15 @@ IndexIterator* Index_IntersectFilters(RedisModuleCtx *ctx, const char *graphName
   return NULL;
 }
 
+char* Index_OpPrint(AST_IndexNode *indexNode) {
+  switch(indexNode->operation) {
+    case CREATE_INDEX:
+      return "Create Index";
+    default:
+      return "Drop Index";
+  }
+}
+
 void* IndexIterator_Next(IndexIterator *iter) {
   return skiplistIterator_Next(iter);
 }

@@ -78,15 +78,6 @@ int _index_operation(RedisModuleCtx *ctx, const char *graphName, AST_IndexNode *
   return 1;
 }
 
-char* _index_operation_print(AST_IndexNode *indexNode) {
-  switch(indexNode->operation) {
-    case CREATE_INDEX:
-      return "Create Index";
-    default:
-      return "Drop Index";
-  }
-}
-
 /* Removes given graph.
  * Args:
  * argv[1] graph name
@@ -235,7 +226,7 @@ int MGraph_Explain(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (!ast) return REDISMODULE_OK;
 
     if (ast->indexNode != NULL) { // index operation
-      char *strPlan = _index_operation_print(ast->indexNode);
+      char *strPlan = Index_OpPrint(ast->indexNode);
       RedisModule_ReplyWithStringBuffer(ctx, strPlan, strlen(strPlan));
       return REDISMODULE_OK;
     }
